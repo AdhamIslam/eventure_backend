@@ -1,121 +1,221 @@
-import { Link } from "react-router-dom";
-export default function HomePage() {
+import React, { useState } from "react";
+import EventCard from "../components/EventCard";
+import { useNavigate } from "react-router-dom";
+import Header from "../components/userHeader";
+import Footer from "../components/adminFooter";
+
+const timeFilters = [
+  "All",
+  "Today",
+  "Tomorrow",
+  "This Week",
+  "This Weekend",
+  "Next Week",
+  "Next Weekend",
+  "This Month",
+  "Next Month",
+  "This Year",
+  "Next Year",
+];
+
+const categoryFilters = [
+  "All",
+  "Arts",
+  "Business",
+  "Concert",
+  "Workshops",
+  "Coaching and Consulting",
+  "Health and Wellbeing",
+  "Volunteer",
+  "Sports",
+];
+
+const events = [
+  {
+    id: 1,
+    title: "A New Way Of Life",
+    image: "../utils/Event.png",
+    price: "AUD $100.00*",
+    date: "15 Apr",
+    time: "Fri, 3:45 PM",
+    duration: "1h",
+    category: "Workshops",
+    remaining: null,
+  },
+  {
+    id: 2,
+    title: "Earrings Workshop with Bronwyn David",
+    image: "../utils/Event.png",
+    price: "AUD $75.00*",
+    date: "30 Apr",
+    time: "Sat, 11:20 PM",
+    duration: "2h",
+    category: "Arts",
+    remaining: 6,
+  },
+  {
+    id: 3,
+    title: "Spring Showcase Saturday April 30th 2022 at 7pm",
+    image: "../utils/Event.png",
+    price: "Free*",
+    date: "1 May",
+    time: "Sun, 4:30 PM",
+    duration: "3h",
+    category: "Concert",
+    remaining: null,
+  },
+  {
+    id: 4,
+    title: "Shutter Life",
+    image: "../utils/Event.png",
+    price: "AUD $85.00",
+    date: "1 May",
+    time: "Sun, 5:30 PM",
+    duration: "1h",
+    category: "Arts",
+    remaining: 7,
+  },
+  {
+    id: 5,
+    title: "Friday Night Dinner at The Old Station May 27 2022",
+    image: "../utils/Event.png",
+    price: "AUD $41.50*",
+    date: "27 May",
+    time: "Fri, 12:00 PM",
+    duration: "5h",
+    category: "Business",
+    remaining: null,
+  },
+  {
+    id: 6,
+    title: "Step Up Open Mic Show",
+    image: "../utils/Event.png",
+    price: "AUD $200.00*",
+    date: "30 Jun",
+    time: "Thu, 4:30 PM",
+    duration: "1h",
+    category: "Concert",
+    remaining: null,
+  },
+  {
+    id: 7,
+    title: "Tutorial on Canvas Painting for Beginners",
+    image: "../utils/Event.png",
+    price: "AUD $50.00*",
+    date: "17 Jul",
+    time: "Sun, 5:30 PM",
+    duration: "1h",
+    category: "Arts",
+    remaining: 17,
+  },
+  {
+    id: 8,
+    title: "Trainee Program on Leadership' 2022",
+    image: "../utils/Event.png",
+    price: "AUD $120.00*",
+    date: "20 Jul",
+    time: "Wed, 11:30 PM",
+    duration: "12h",
+    category: "Business",
+    remaining: 7,
+  },
+];
+
+function HomePage() {
+  const [selectedTimeFilter, setSelectedTimeFilter] = useState("All");
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("All");
+  const [savedEvents, setSavedEvents] = useState([]);
+  const navigate = useNavigate();
+
+  const handleTimeFilterClick = (filter) => {
+    setSelectedTimeFilter(filter);
+    navigate(`/discoverEvents`);
+  };
+
+  const toggleSaveEvent = (eventId) => {
+    setSavedEvents((prev) =>
+      prev.includes(eventId)
+        ? prev.filter((id) => id !== eventId)
+        : [...prev, eventId]
+    );
+  };
+
+  const filteredEvents = events.filter((event) => {
+    const matchesCategory =
+      selectedCategoryFilter === "All" ||
+      event.category === selectedCategoryFilter;
+    const matchesTime = selectedTimeFilter === "All";
+    return matchesCategory && matchesTime;
+  });
+
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow p-4 flex items-center justify-between">
-        {/* Left Section: Logo */}
-        <div className="flex items-center space-x-4">
-          <img src="/logo.png" alt="Logo" className="h-10" />
-        </div>
+      <Header />
 
-        {/* Middle Section: Navigation */}
-        <nav className="hidden md:flex space-x-4">
-          <Link
-            className="text-green-500 hover:underline inline-block"
-            to={"/home"}
-          >
-            Home
-          </Link>
-          <a href="#" className="text-gray-700 hover:text-green-500">
-            Explore Events
-          </a>
-          <a href="#" className="text-gray-700 hover:text-green-500">
-            Pricing
-          </a>
-          <a href="#" className="text-gray-700 hover:text-green-500">
-            Blog
-          </a>
-          <a href="#" className="text-gray-700 hover:text-green-500">
-            Help
-          </a>
-        </nav>
-
-        {/* Right Section: Buttons and User Avatar */}
-        <div className="flex items-center space-x-4">
-          <button className="bg-green-500 text-white px-4 py-2 rounded">
-            Create Event
-          </button>
-          <img
-            src="/user-avatar.jpg"
-            alt="User Avatar"
-            className="w-10 h-10 rounded-full"
-          />
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <section className="bg-green-100 text-center py-12">
-        <h1 className="text-2xl md:text-4xl font-semibold mb-6">
-          Discover Events For All The Things You Love
-        </h1>
-        <div className="flex flex-wrap justify-center gap-4">
-          <select className="border p-3 rounded w-full md:w-48">
-            <option>Browse All</option>
-          </select>
-          <select className="border p-3 rounded w-full md:w-48">
-            <option>All</option>
-          </select>
-          <button className="bg-green-500 text-white px-6 py-3 rounded">
-            Find
-          </button>
-        </div>
-      </section>
-
-      {/* Filters */}
-      <div className="bg-gray-100 py-4 px-6 overflow-x-auto flex space-x-4">
-        {["All", "Today", "Tomorrow", "This Week", "This Month"].map(
-          (filter) => (
-            <button
-              key={filter}
-              className="px-4 py-2 bg-white text-gray-700 rounded shadow hover:bg-green-100"
-            >
-              {filter}
-            </button>
-          )
-        )}
-      </div>
-
-      {/* Categories */}
-      <div className="py-4 px-6 overflow-x-auto flex space-x-4">
-        {["All", "Arts", "Business", "Concert", "Workshops", "Sports"].map(
-          (category, index) => (
-            <button
-              key={index}
-              className={`px-4 py-2 ${
-                index === 0 ? "bg-green-500 text-white" : "bg-white"
-              } rounded shadow hover:bg-green-100`}
-            >
-              {category}
-            </button>
-          )
-        )}
-      </div>
-
-      {/* Event Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6">
-        {[...Array(8)].map((_, index) => (
-          <div
-            key={index}
-            className="bg-white rounded shadow hover:shadow-lg transition p-4"
-          >
-            <img
-              src="/event-image.jpg"
-              alt="Event"
-              className="w-full h-40 object-cover rounded"
-            />
-            <h3 className="font-bold text-lg mt-4">Event Title</h3>
-            <p className="text-gray-600">AUD $100.00</p>
-            <p className="text-sm text-gray-500">15 Apr - Fri, 3:45 PM</p>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Time Filters */}
+        <div className="mb-4 overflow-x-auto">
+          <div className="flex space-x-2 min-w-max">
+            {timeFilters.map((filter) => (
+              <button
+                key={filter}
+                onClick={() => handleTimeFilterClick(filter)}
+                className={`px-3 py-1 rounded-md text-sm transition-all transform hover:scale-105 ${
+                  selectedTimeFilter === filter
+                    ? "bg-gray-600 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                {filter}
+              </button>
+            ))}
           </div>
-        ))}
-      </div>
-      <div className="flex items-center justify-center">
-        <button className="bg-green-500 text-white px-6 py-3 rounded ">
-            Browse All 
-        </button>
-      </div>  
-      
+        </div>
+
+        {/* Category Filters */}
+        <div className="mb-6 overflow-x-auto">
+          <div className="flex space-x-2 min-w-max">
+            {categoryFilters.map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setSelectedCategoryFilter(filter)}
+                className={`px-3 py-1 rounded-md text-sm transition-all transform hover:scale-105 ${
+                  selectedCategoryFilter === filter
+                    ? "border-b-2 border-blue-500 text-blue-500"
+                    : "text-gray-600 hover:text-gray-600"
+                }`}
+              >
+                {filter}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Event Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredEvents.map((event) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              isSaved={savedEvents.includes(event.id)}
+              onSave={toggleSaveEvent}
+            />
+          ))}
+        </div>
+
+        {/* Browse All Button */}
+        <div className="flex justify-center mt-8">
+          <button className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-md transition-colors">
+            Browse All
+          </button>
+        </div>
+      </main>
+      {/* Footer */}
+      <Footer />
+      <div className=" bottom-0 left-0 right-0  text-white "></div>
     </div>
   );
 }
+
+export default HomePage;

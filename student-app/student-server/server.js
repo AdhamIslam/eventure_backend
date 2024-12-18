@@ -50,10 +50,10 @@ app.get("/loginValidate/:email",(req,res)=>{
     });
 });
 
-app.post("/students",(req,res)=>{
-    const {name,major,email} = req.body;
-    const sql = `INSERT INTO student (name,major,email) VALUES ($1,$2,$3) RETURNING *`;
-    pool.query(sql,[name,major,email],(err,result) => {
+app.post("/signUp",(req,res)=>{
+    const {firstName,lastName,username,email,phoneNumber,dob,password} = req.body;
+    const sql = `INSERT INTO client (first_name, last_name, username, email, phone_number, dob,pass) VALUES ($1,$2,$3, $4, $5, $6,$7);`;
+    pool.query(sql,[firstName,lastName,username,email,phoneNumber,dob,password],(err,result) => {
         if (err) return res.json(err);
         return res.status(201).json(result.rows[0]); 
     });
