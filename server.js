@@ -8,6 +8,7 @@ const port = 3005;
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
+const { appendFileSync } = require("fs");
 
 app.use(express.json());
 app.use(cors());
@@ -23,8 +24,8 @@ app.listen(port,(err)=>{
 });
 
 const pool =new postgresPool({
-    user:"postgres",
-    password:"root",
+    user:"odoo",
+    password:"odoo",
     database:"eventure",
     host:"localhost",
     port:5432,
@@ -180,12 +181,52 @@ app.post("/signUp",(req,res)=>{
         });
     });
 });
+//**************************************************************************planner****************************************************************** */
 
-app.get("/plannerLoginValidate/:email",(req,res)=>{
-    const email = req.params.email;
-    const sql = `SELECT * FROM event_planner WHERE email = $1`;
-    pool.query(sql,[email],(err,result) => {
-        if (err) return res.json(err);
-        return res.status(200).json(result.rows[0]); 
-    });
+app.post("/plannerLoginValidate",async(req,res)=>{
+  const {emailOrUsername,password}=req.body;
+  try{
+    const result=await pool.query("SELECT * FROM event_planner WHERE email = $1 OR username = $1",[emailOrUsername]);
+    if(result.rows.length===0){
+      return res.status(401).json({error:"Invalid Email or Username"});
+    }
+    const user=result.rows[0];
+    const matching=await bcrypt.compare(password,user.pass);
+    if(!matching){
+      return res.status(401).json({error:"Invalid credentials"});
+    }
+    delete user.pass; // to remove pass from user when sending it to front-end (security)
+    res.status(200).json(user);
+  }catch(err){
+    console.error("Login error",err);
+    res.status(500).json({error:"Internal server error"});
+  }
+});
+
+
+app.post("/plannerSignUp",(req,res)=>{
+  const {  username, email, docs, password } = req.body;
+
+  const checkSql = `SELECT * FROM event_planner WHERE email = $1 OR username = $2`;
+  pool.query(checkSql, [email, username], async(checkErr, checkResult) => {
+      if (checkErr) return res.status(500).json({ error: "Database error during check" });
+
+      if (checkResult.rows.length > 0) {
+          // Determine what field is duplicated
+          const existing = checkResult.rows[0];
+          let duplicateField = '';
+          if (existing.email === email) duplicateField = 'Email';
+          else if (existing.username === username) duplicateField = 'Username';
+          
+          return res.status(400).json({ error: `${duplicateField} already exists.` });
+      }
+
+      // No duplicates, proceed to insert
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const insertSql = `INSERT INTO event_planner (username,pass,docs,email) VALUES ($1,$2,$3,$4) RETURNING *`;
+      pool.query(insertSql, [ username, hashedPassword, docs, email], (err, result) => {
+          if (err) return res.status(500).json({ error: "Error inserting planner" });
+          return res.status(201).json(result.rows[0]);
+      });
+  });
 });
