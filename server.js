@@ -230,3 +230,14 @@ app.post("/plannerSignUp",(req,res)=>{
       });
   });
 });
+
+
+app.post("/createEvent",(req,res)=>{
+  const {plannerId, eventName, date, time, location, minAge, category, description} = req.body;
+
+  const sqlQuery = `INSERT INTO events (planner_id,event_name,event_date,event_address,min_age,category,event_time,event_description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8);`
+
+  pool.query(sqlQuery, [plannerId, eventName, date, location, minAge, category, time,description], async (checkErr, checkResult)=>{
+  if (checkErr) return res.status(500).json({ error: "Database error during check" });});
+
+});
