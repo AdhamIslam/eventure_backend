@@ -7,7 +7,7 @@ console.log("🔗 DATABASE_URL =", process.env.DATABASE_URL);
 const app = express();
 const bodyParser =require("body-parser");
 const { Connection } = require("pg");
-const port = process.env.PORT || 4000;
+const PORT = process.env.PORT || 4000;
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
@@ -24,8 +24,8 @@ app.use(bodyParser.urlencoded({
     extended:true
 }));
 
-app.listen(port, () => {
-  console.log(`✅ Server running on port ${port}`);
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });
 
 const { Pool } = require("pg");
