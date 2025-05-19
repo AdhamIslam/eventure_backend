@@ -1,6 +1,9 @@
 const express =require("express");
 const cors = require ("cors");
-const postgresPool = require("pg").Pool;
+require("dotenv").config();
+console.log("🔎 HELLO =", process.env.HELLO);
+console.log("🔗 DATABASE_URL =", process.env.DATABASE_URL);
+
 const app = express();
 const bodyParser =require("body-parser");
 const { Connection } = require("pg");
@@ -9,6 +12,9 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
 const { appendFileSync } = require("fs");
+
+
+app.use(cors({ origin: 'http://localhost:5173' }));
 
 app.use(express.json());
 app.use(cors());
@@ -20,26 +26,18 @@ app.use(bodyParser.urlencoded({
 app.listen(port,(err)=>{
     if (err) throw err;
     console.log(err);
+    console.log("🔗 Connecting to DB with:", process.env.DATABASE_URL);
     console.log("Server running");
 });
 
-// db.js
-const { Pool } = require('pg');
+const { Pool } = require("pg");
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false, // Required for Supabase SSL
+    require: true,
+    rejectUnauthorized: false,
   },
-});
-
-module.exports = pool;
-
-
-pool.connect((err,Connection)=>{
-    if (err) throw err;
-    console.log(err);
-    console.log("db connected successfully")
 });
 
 app.get("/clients",(req,res)=>{
@@ -161,9 +159,12 @@ const sql = `
 app.post("/signUp",(req,res)=>{
     const { firstName, lastName, username, email, phoneNumber, dob, password } = req.body;
 
-    const checkSql = `SELECT * FROM client WHERE email = $1 OR username = $2 OR phone = $3`;
+    const checkSql = `SELECT * FROM client WHERE email = $1 OR username = $2 OR phone_number = $3`;
     pool.query(checkSql, [email, username, phoneNumber], async(checkErr, checkResult) => {
-        if (checkErr) return res.status(500).json({ error: "Database error during check" });
+        if (checkErr){
+          console.error("DB check error:", checkErr);
+          return res.status(500).json({ error: "Database error during check" });
+        } 
 
         if (checkResult.rows.length > 0) {
             // Determine what field is duplicated
@@ -178,9 +179,12 @@ app.post("/signUp",(req,res)=>{
 
         // No duplicates, proceed to insert
         const hashedPassword = await bcrypt.hash(password, 10);
-        const insertSql = `INSERT INTO client (first_name, last_name, username, email, phone, dob, pass) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`;
+        const insertSql = `INSERT INTO client (first_name, last_name, username, email, phone_number, dob, pass) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`;
         pool.query(insertSql, [firstName, lastName, username, email, phoneNumber, dob, hashedPassword], (err, result) => {
-            if (err) return res.status(500).json({ error: "Error inserting user" });
+            if (err){
+              console.error("DB check error:", checkErr);
+              return res.status(500).json({ error: "Error inserting user" });
+            } 
             return res.status(201).json(result.rows[0]);
         });
     });
@@ -241,8 +245,8 @@ app.post("/createEvent",(req,res)=>{
 
   const sqlQuery = `INSERT INTO events (planner_id,event_name,event_date,event_address,min_age,category,event_time,event_description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8);`
 
-  pool.query(sqlQuery, [plannerId, eventName, date, location, minAge, category, time,description], async (checkErr, checkResult)=>{
-  if (checkErr) return res.status(500).json({ error: "Database error during check" });
-  return res.status(201);});
+  pool.query(sqlQuery, [plannerId, eventName, date, location, minAge, category, time,description], (checkErr, checkResult)=>{
+      if (checkErr) return res.status(500).json({ error: "Database error during check" });
+      return res.sendStatus(201);});
 
 });
