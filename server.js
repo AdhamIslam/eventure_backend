@@ -25,7 +25,7 @@ app.use(bodyParser.urlencoded({
 }));
 
 app.listen(port, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${port}`);
 });
 
 const { Pool } = require("pg");
