@@ -38,6 +38,10 @@ const pool = new Pool({
   },
 });
 
+app.get("/", (req, res) => {
+  res.send("🚀 API is live!");
+});
+
 app.get("/clients",(req,res)=>{
     const sql = `SELECT * FROM client`;
     pool.query(sql,(err,result) => {
