@@ -24,11 +24,8 @@ app.use(bodyParser.urlencoded({
     extended:true
 }));
 
-app.listen(port,(err)=>{
-    if (err) throw err;
-    console.log(err);
-    console.log("🔗 Connecting to DB with:", process.env.DATABASE_URL);
-    console.log("Server running");
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });
 
 const { Pool } = require("pg");
