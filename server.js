@@ -252,3 +252,38 @@ app.post("/createEvent",(req,res)=>{
       return res.sendStatus(201);});
 
 });
+
+
+app.post("/saveTickets", async (req, res) => {
+  const { eventId, tickets } = req.body;
+
+  if (!eventId || !Array.isArray(tickets)) {
+    return res.status(400).json({ error: "Invalid input data" });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    for (const ticket of tickets) {
+      const { name, price, totalTickets } = ticket;
+
+      await client.query(
+        `INSERT INTO ticket_  categories (event_id, category, price, total_tickets)
+         VALUES ($1, $2, $3, $4)`,
+        [eventId, name, price, totalTickets === "Unlimited" ? null : totalTickets]
+      );
+    }
+
+    await client.query("COMMIT");
+    res.status(201).json({ message: "Tickets saved successfully" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Ticket insert error:", err);
+    res.status(500).json({ error: "Database insert error" });
+  } finally {
+    client.release();
+  }
+});
+
