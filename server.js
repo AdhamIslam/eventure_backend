@@ -11,6 +11,8 @@ const PORT = process.env.PORT || 4000;
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
+const { getAuth } = require("@clerk/backend");
+
 
 const { appendFileSync } = require("fs");
 
@@ -158,7 +160,13 @@ const sql = `
     return res.status(200).json(result.rows[0]);
   });
 });
+
+
 app.post("/signUp",(req,res)=>{
+
+  const auth = getAuth(req);
+  if (!auth?.userId) return res.status(401).json({ error: "Unauthorized" });
+
     const { firstName, lastName, username, email, phoneNumber, dob, password } = req.body;
 
     const checkSql = `SELECT * FROM client WHERE email = $1 OR username = $2 OR phone_number = $3`;
