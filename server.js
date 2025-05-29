@@ -3,7 +3,7 @@ const cors = require ("cors");
 require("dotenv").config();
 console.log("🔎 HELLO =", process.env.HELLO);
 console.log("🔗 DATABASE_URL =", process.env.DATABASE_URL);
-
+const { ClerkExpressRequireAuth } = require('@clerk/clerk-sdk-node');
 const app = express();
 const bodyParser =require("body-parser");
 const { Connection } = require("pg");
