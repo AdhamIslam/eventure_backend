@@ -3,7 +3,7 @@ const cors = require ("cors");
 require("dotenv").config();
 console.log("🔎 HELLO =", process.env.HELLO);
 console.log("🔗 DATABASE_URL =", process.env.DATABASE_URL);
-
+const { ClerkExpressRequireAuth } = require('@clerk/clerk-sdk-node');
 const app = express();
 const bodyParser =require("body-parser");
 const { Connection } = require("pg");
@@ -162,43 +162,32 @@ const sql = `
 });
 
 
-app.post("/signUp",(req,res)=>{
+app.post("/signUp", ClerkExpressRequireAuth(), async (req, res) => {
+  const clerkUserId = req.auth.userId;
+  const { firstName, lastName, username, email, phoneNumber, dob, role } = req.body;
 
-  const auth = getAuth(req);
-  if (!auth?.userId) return res.status(401).json({ error: "Unauthorized" });
+  try {
+    const table = role === "planner" ? "event_planner" : "client";
 
-    const { firstName, lastName, username, email, phoneNumber, dob, password } = req.body;
+    const check = await pool.query(`SELECT * FROM ${table} WHERE clerk_user_id = $1`, [clerkUserId]);
+    if (check.rows.length > 0) {
+      return res.status(400).json({ error: `${role} already exists.` });
+    }
 
-    const checkSql = `SELECT * FROM client WHERE email = $1 OR username = $2 OR phone_number = $3`;
-    pool.query(checkSql, [email, username, phoneNumber], async(checkErr, checkResult) => {
-        if (checkErr){
-          console.error("DB check error:", checkErr);
-          return res.status(500).json({ error: "Database error during check" });
-        } 
+    const insert = await pool.query(
+      `INSERT INTO ${table} (clerk_user_id, first_name, last_name, username, email, phone_number, dob)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [clerkUserId, firstName, lastName, username, email, phoneNumber, dob]
+    );
 
-        if (checkResult.rows.length > 0) {
-            // Determine what field is duplicated
-            const existing = checkResult.rows[0];
-            let duplicateField = '';
-            if (existing.email === email) duplicateField = 'Email';
-            else if (existing.username === username) duplicateField = 'Username';
-            else if (existing.phone === phoneNumber) duplicateField = 'Phone number';
-
-            return res.status(400).json({ error: `${duplicateField} already exists.` });
-        }
-
-        // No duplicates, proceed to insert
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const insertSql = `INSERT INTO client (first_name, last_name, username, email, phone_number, dob, pass) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`;
-        pool.query(insertSql, [firstName, lastName, username, email, phoneNumber, dob, hashedPassword], (err, result) => {
-            if (err){
-              console.error("DB check error:", checkErr);
-              return res.status(500).json({ error: "Error inserting user" });
-            } 
-            return res.status(201).json(result.rows[0]);
-        });
-    });
+    return res.status(201).json(insert.rows[0]);
+  } catch (err) {
+    console.error("Sign-up error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 });
+
 //**************************************************************************planner****************************************************************** */
 
 app.post("/plannerLoginValidate",async(req,res)=>{
