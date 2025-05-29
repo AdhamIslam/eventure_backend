@@ -17,7 +17,14 @@ const { getAuth } = require("@clerk/backend");
 const { appendFileSync } = require("fs");
 
 
-app.use(cors({ origin: 'http://localhost:5173' }));
+
+
+app.use(cors({
+  origin: ["http://localhost:5173", "https://your-frontend.vercel.app"], // add Vercel domain later too
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true,
+}));
+
 
 app.use(express.json());
 app.use(cors());
@@ -163,9 +170,6 @@ const sql = `
 
 
 app.post("/signUp",(req,res)=>{
-
-  const auth = getAuth(req);
-  if (!auth?.userId) return res.status(401).json({ error: "Unauthorized" });
 
     const { firstName, lastName, username, email, phoneNumber, dob, password } = req.body;
 
