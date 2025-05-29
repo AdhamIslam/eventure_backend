@@ -169,40 +169,60 @@ const sql = `
 });
 
 
-app.post("/signUp",(req,res)=>{
+app.post("/signUp", async (req, res) => {
+  const { firstName, lastName, username, email, phoneNumber, dob, password } = req.body;
 
-    const { firstName, lastName, username, email, phoneNumber, dob, password } = req.body;
-
+  try {
     const checkSql = `SELECT * FROM client WHERE email = $1 OR username = $2 OR phone_number = $3`;
-    pool.query(checkSql, [email, username, phoneNumber], async(checkErr, checkResult) => {
-        if (checkErr){
-          console.error("DB check error:", checkErr);
-          return res.status(500).json({ error: "Database error during check" });
-        } 
+    const checkResult = await pool.query(checkSql, [email, username, phoneNumber]);
 
-        if (checkResult.rows.length > 0) {
-            // Determine what field is duplicated
-            const existing = checkResult.rows[0];
-            let duplicateField = '';
-            if (existing.email === email) duplicateField = 'Email';
-            else if (existing.username === username) duplicateField = 'Username';
-            else if (existing.phone === phoneNumber) duplicateField = 'Phone number';
+    if (checkResult.rows.length > 0) {
+      const existing = checkResult.rows[0];
+      let duplicateField = '';
+      if (existing.email === email) duplicateField = 'Email';
+      else if (existing.username === username) duplicateField = 'Username';
+      else if (existing.phone_number === phoneNumber) duplicateField = 'Phone number';
 
-            return res.status(400).json({ error: `${duplicateField} already exists.` });
-        }
+      return res.status(400).json({ error: `${duplicateField} already exists.` });
+    }
 
-        // No duplicates, proceed to insert
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const insertSql = `INSERT INTO client (first_name, last_name, username, email, phone_number, dob, pass) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`;
-        pool.query(insertSql, [firstName, lastName, username, email, phoneNumber, dob, hashedPassword], (err, result) => {
-            if (err){
-              console.error("DB check error:", checkErr);
-              return res.status(500).json({ error: "Error inserting user" });
-            } 
-            return res.status(201).json(result.rows[0]);
-        });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const insertSql = `
+      INSERT INTO client (first_name, last_name, username, email, phone_number, dob, pass, verify_code)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *;
+    `;
+
+    await pool.query(insertSql, [firstName, lastName, username, email, phoneNumber, dob, hashedPassword, verificationCode]);
+
+    // Send email with verification code
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,       // e.g. your@gmail.com
+        pass: process.env.EMAIL_PASS,       // app password or real password
+      },
     });
+
+    const mailOptions = {
+      from: `"Eventure" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Verify your email",
+      html: `<p>Your verification code is: <b>${verificationCode}</b></p>`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(201).json({ message: "User registered. Verification code sent to email." });
+
+  } catch (err) {
+    console.error("Signup error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
+
 //**************************************************************************planner****************************************************************** */
 
 app.post("/plannerLoginValidate",async(req,res)=>{
