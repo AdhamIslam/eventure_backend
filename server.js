@@ -223,6 +223,37 @@ app.post("/signUp", async (req, res) => {
   }
 });
 
+app.post("/verify-email", async (req, res) => {
+  const { email, code } = req.body;
+
+  if (!email || !code) {
+    return res.status(400).json({ error: "Email and code are required" });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT * FROM client WHERE email = $1 AND verify_code = $2`,
+      [email, code]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ error: "Invalid verification code" });
+    }
+
+    await pool.query(
+      `UPDATE client SET is_verified = true, verify_code = NULL WHERE email = $1`,
+      [email]
+    );
+
+    res.status(200).json({ message: "Email verified successfully" });
+
+  } catch (err) {
+    console.error("Verification error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
 //**************************************************************************planner****************************************************************** */
 
 app.post("/plannerLoginValidate",async(req,res)=>{
