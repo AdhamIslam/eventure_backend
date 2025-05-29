@@ -3,7 +3,7 @@ const cors = require ("cors");
 require("dotenv").config();
 console.log("🔎 HELLO =", process.env.HELLO);
 console.log("🔗 DATABASE_URL =", process.env.DATABASE_URL);
-const { ClerkExpressRequireAuth } = require('@clerk/clerk-sdk-node');
+
 const app = express();
 const bodyParser =require("body-parser");
 const { Connection } = require("pg");
@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 4000;
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
-const { getAuth } = require("@clerk/backend");
+
 
 
 const { appendFileSync } = require("fs");
