@@ -224,15 +224,17 @@ app.post("/signUp", async (req, res) => {
 });
 
 app.post("/verify-email", async (req, res) => {
-  const { email, code } = req.body;
+  const { email, code, isPlanner } = req.body;
 
   if (!email || !code) {
     return res.status(400).json({ error: "Email and code are required" });
   }
 
+  const table = isPlanner ? "event_planner" : "client";
+
   try {
     const result = await pool.query(
-      `SELECT * FROM client WHERE email = $1 AND verify_code = $2`,
+      `SELECT * FROM ${table} WHERE email = $1 AND verify_code = $2`,
       [email, code]
     );
 
@@ -241,7 +243,7 @@ app.post("/verify-email", async (req, res) => {
     }
 
     await pool.query(
-      `UPDATE client SET is_verified = true, verify_code = NULL WHERE email = $1`,
+      `UPDATE ${table} SET is_verified = true, verify_code = NULL WHERE email = $1`,
       [email]
     );
 
@@ -252,6 +254,7 @@ app.post("/verify-email", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
 
 
 //**************************************************************************planner****************************************************************** */
@@ -277,32 +280,54 @@ app.post("/plannerLoginValidate",async(req,res)=>{
 });
 
 
-app.post("/plannerSignUp",(req,res)=>{
-  const {  username, email, docs, password } = req.body;
+app.post("/plannerSignUp", async (req, res) => {
+  const { username, email, docs, password } = req.body;
 
-  const checkSql = `SELECT * FROM event_planner WHERE email = $1 OR username = $2`;
-  pool.query(checkSql, [email, username], async(checkErr, checkResult) => {
-      if (checkErr) return res.status(500).json({ error: "Database error during check" });
+  try {
+    const checkSql = `SELECT * FROM event_planner WHERE email = $1 OR username = $2`;
+    const checkResult = await pool.query(checkSql, [email, username]);
 
-      if (checkResult.rows.length > 0) {
-          // Determine what field is duplicated
-          const existing = checkResult.rows[0];
-          let duplicateField = '';
-          if (existing.email === email) duplicateField = 'Email';
-          else if (existing.username === username) duplicateField = 'Username';
-          
-          return res.status(400).json({ error: `${duplicateField} already exists.` });
-      }
+    if (checkResult.rows.length > 0) {
+      const existing = checkResult.rows[0];
+      let duplicateField = existing.email === email ? 'Email' : 'Username';
+      return res.status(400).json({ error: `${duplicateField} already exists.` });
+    }
 
-      // No duplicates, proceed to insert
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const insertSql = `INSERT INTO event_planner (username,pass,docs,email) VALUES ($1,$2,$3,$4) RETURNING *`;
-      pool.query(insertSql, [ username, hashedPassword, docs, email], (err, result) => {
-          if (err) return res.status(500).json({ error: "Error inserting planner" });
-          return res.status(201).json(result.rows[0]);
-      });
-  });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const insertSql = `
+      INSERT INTO event_planner (username, pass, docs, email, verify_code)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *;
+    `;
+    await pool.query(insertSql, [username, hashedPassword, docs, email, verificationCode]);
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: `"Eventure" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Verify your Planner Account",
+      html: `<p>Your verification code is: <b>${verificationCode}</b></p>`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(201).json({ message: "Planner registered. Verification code sent." });
+
+  } catch (err) {
+    console.error("Planner signup error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
+
 
 
 app.post("/createEvent",(req,res)=>{
