@@ -126,17 +126,51 @@ app.post("/reset-password", async (req, res) => {
   });
 
 app.post("/loginValidate",async(req,res)=>{
-    const {email,password}=req.body;
+    const {emailOrUsername,password}=req.body;
     try{
-      const result=await pool.query("SELECT * FROM client WHERE email = $1",[email]);
+      const result=await pool.query("SELECT * FROM client WHERE email = $1 OR username = $1",[emailOrUsername]);
       if(result.rows.length===0){
         return res.status(401).json({error:"Invalid credentials"});
       }
+     
       const user=result.rows[0];
       const matching=await bcrypt.compare(password,user.pass);
       if(!matching){
         return res.status(401).json({error:"Invalid credentials"});
       }
+      if (!user.is_verified) {
+        const verificationCode = user.verify_code;
+
+        // If verify_code is missing (shouldn't happen), return error
+        if (!verificationCode) {
+          return res.status(400).json({ error: "Missing verification code. Please contact support." });
+        }
+
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+        });
+
+        const mailOptions = {
+          from: `"Eventure" <${process.env.EMAIL_USER}>`,
+          to: user.email,
+          subject: "Verify your Email",
+          html: `<p>Your existing verification code is: <b>${verificationCode}</b></p>`,
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        return res.status(403).json({
+          error: "Unverified",
+          email: user.email,
+          isPlanner: false,
+        });
+      }
+
+
       delete user.pass; // to remove pass from user when sending it to front-end (security)
       res.status(200).json(user);
     }catch(err){
@@ -271,6 +305,42 @@ app.post("/plannerLoginValidate",async(req,res)=>{
     if(!matching){
       return res.status(401).json({error:"Invalid credentials"});
     }
+    if (!user.is_verified) {
+      const verificationCode = user.verify_code;
+
+      // If verify_code is missing (shouldn't happen), return error
+      if (!verificationCode) {
+        return res.status(400).json({ error: "Missing verification code. Please contact support." });
+      }
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+
+      const mailOptions = {
+        from: `"Eventure" <${process.env.EMAIL_USER}>`,
+        to: user.email,
+        subject: "Verify your Email",
+        html: `<p>Your existing verification code is: <b>${verificationCode}</b></p>`,
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      return res.status(403).json({
+        error: "Unverified",
+        email: user.email,
+        isPlanner: false,
+      });
+    }
+
+    if(!user.enabled){
+      return res.status(400).json({ error: "Your account is pending please chaeck later!" });
+    }
+
     delete user.pass; // to remove pass from user when sending it to front-end (security)
     res.status(200).json(user);
   }catch(err){
