@@ -87,7 +87,7 @@ app.post("/forgotPassword", async (req, res) => {
       },
     });
 
-    const resetLink = `http://localhost:5173/reset-password?token=${token}`; // Frontend reset route
+    const resetLink = `http://localhost:5173//resetPassword?token=${token}`; // Frontend reset route
     const mailOptions = {
       to: email,
       subject: "Password Reset",
