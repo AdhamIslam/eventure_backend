@@ -17,7 +17,10 @@ const pool = new Pool({
     rejectUnauthorized: false,
   },
 });
-
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
 // Force HTTPS in production
 app.use((req, res, next) => {
   if (process.env.NODE_ENV === "production" && req.headers["x-forwarded-proto"] !== "https") {
@@ -26,10 +29,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true,
-}));
 app.use(bodyParser.json());
 app.use(session({
   secret: process.env.SESSION_SECRET || "super_secret_key",
