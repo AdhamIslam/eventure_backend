@@ -26,9 +26,9 @@ app.use(cors({
   },
   credentials: true
 }));
-app.options("*", cors()); // handles preflight
 // ✅ Trust Proxy (for Railway)
 app.set("trust proxy", 1);
+app.options("*", cors()); // handles preflight
 
 // ✅ Session Middleware
 app.use(session({
