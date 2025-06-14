@@ -1,5 +1,6 @@
 // ✅ server.js (session with cookie cleared only on logout)
 const express = require("express");
+const app = express();
 const cors = require("cors");
 app.use(cors({
   origin: "http://localhost:5173",
@@ -21,8 +22,6 @@ const bodyParser = require("body-parser");
 const dotenv = require("dotenv").config();
 const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
-
-const app = express();
 const PORT = process.env.PORT || 4000;
 
 const pool = new Pool({
