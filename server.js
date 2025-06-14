@@ -44,7 +44,10 @@ app.use(session({
 app.listen(PORT, () => console.log(`✅ Server running on ${PORT}`));
 
 const { Pool } = require("pg");
-
+app.use(cors({
+  origin: "http://localhost:5173",     // allow Vite dev server
+  credentials: true                    // allow session cookies
+}));
 
 app.get("/", (req, res) => {
   res.send("🚀 API is live!");
