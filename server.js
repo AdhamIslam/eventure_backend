@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 4000;
 app.use(cors({
   origin: (origin, callback) => {
     const allowedOrigins = [
-      "http://localhost:5173",
+      "http://localhost:5173/",
       "https://your-frontend-domain.vercel.app"
     ];
     if (!origin || allowedOrigins.includes(origin)) {
@@ -190,7 +190,11 @@ app.post("/loginValidate",async(req,res)=>{
         });
       }
 
-      req.session.user = { id: user.client_id, role: "user" };
+      req.session.user = { id: user.id, role: "user" };
+      req.session.save(err => {
+      if (err) console.error("Session save error:", err);
+      res.status(200).json({ message: "Login success" });
+      });
       delete user.pass; // to remove pass from user when sending it to front-end (security)
       res.status(200).json(user);
     }catch(err){
