@@ -1,43 +1,14 @@
-const express =require("express");
-const cors = require ("cors");
-require("dotenv").config();
-console.log("🔎 HELLO =", process.env.HELLO);
-console.log("🔗 DATABASE_URL =", process.env.DATABASE_URL);
-
-const app = express();
-const bodyParser =require("body-parser");
-const { Connection } = require("pg");
-const PORT = process.env.PORT || 4000;
-const crypto = require("crypto");
-const nodemailer = require("nodemailer");
+// ✅ server.js (session with cookie cleared only on logout)
+const express = require("express");
+const session = require("express-session");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const dotenv = require("dotenv").config();
+const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
 
-
-
-const { appendFileSync } = require("fs");
-
-
-
-
-app.use(cors({
-  origin: ["http://localhost:5173", "https://your-frontend.vercel.app"], // add Vercel domain later too
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  credentials: true,
-}));
-
-
-app.use(express.json());
-app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({
-    extended:true
-}));
-
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
-
-const { Pool } = require("pg");
+const app = express();
+const PORT = process.env.PORT || 4000;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -46,6 +17,34 @@ const pool = new Pool({
     rejectUnauthorized: false,
   },
 });
+
+// Force HTTPS in production
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === "production" && req.headers["x-forwarded-proto"] !== "https") {
+    return res.redirect("https://" + req.headers.host + req.url);
+  }
+  next();
+});
+
+app.use(cors({
+  origin: ["http://localhost:5173", "https://your-frontend.vercel.app"],
+  credentials: true,
+}));
+app.use(bodyParser.json());
+app.use(session({
+  secret: process.env.SESSION_SECRET || "super_secret_key",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production"
+  }
+}));
+
+app.listen(PORT, () => console.log(`✅ Server running on ${PORT}`));
+
+const { Pool } = require("pg");
+
 
 app.get("/", (req, res) => {
   res.send("🚀 API is live!");
@@ -170,7 +169,7 @@ app.post("/loginValidate",async(req,res)=>{
         });
       }
 
-
+      req.session.user = { id: user.client_id, role: "user" };
       delete user.pass; // to remove pass from user when sending it to front-end (security)
       res.status(200).json(user);
     }catch(err){
@@ -350,7 +349,7 @@ app.post("/plannerLoginValidate",async(req,res)=>{
     if(!user.enabled){
       return res.status(400).json({ error: "Your account is pending please chaeck later!" });
     }
-
+    req.session.user = { id: user.planner_id, role: "planner" };
     delete user.pass; // to remove pass from user when sending it to front-end (security)
     res.status(200).json(user);
   }catch(err){
@@ -453,5 +452,24 @@ app.post("/saveTickets", async (req, res) => {
   } finally {
     client.release();
   }
+});
+//**************************************************************************Session Req****************************************************************** */
+app.get("/checkSession", async (req, res) => {
+  if (!req.session.user) return res.status(401).json({ error: "Not logged in" });
+  const { id, role } = req.session.user;
+  const table = role === "planner" ? "event_planner" : "client";
+  const col = role === "planner" ? "planner_id" : "client_id";
+  const result = await pool.query(`SELECT * FROM ${table} WHERE ${col} = $1`, [id]);
+  if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });
+  delete result.rows[0].pass;
+  res.status(200).json(result.rows[0]);
+});
+
+app.post("/logout", (req, res) => {
+  req.session.destroy(err => {
+    if (err) return res.status(500).json({ error: "Logout failed" });
+    res.clearCookie("connect.sid");
+    res.status(200).json({ message: "Logged out" });
+  });
 });
 
