@@ -43,7 +43,7 @@ app.use(session({
 
 app.listen(PORT, () => console.log(`✅ Server running on ${PORT}`));
 
-const { Pool } = require("pg");
+
 
 
 app.get("/", (req, res) => {
