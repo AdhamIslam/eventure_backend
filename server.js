@@ -26,14 +26,14 @@ app.use(cors({
   },
   credentials: true
 }));
-
+app.options("*", cors()); // handles preflight
 // ✅ Trust Proxy (for Railway)
 app.set("trust proxy", 1);
 
 // ✅ Session Middleware
 app.use(session({
   name: "sessionId",
-  secret: process.env.SESSION_SECRET || "keyboard cat",
+  secret: process.env.SESSION_SECRET || "secret",
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -201,7 +201,7 @@ app.post("/loginValidate", async (req, res) => {
 
     // ✅ Set session after email is verified
     req.session.user = {
-      id: user.id,
+      id: user.client_id,
       role: "user",
     };
 
