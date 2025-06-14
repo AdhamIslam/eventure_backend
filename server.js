@@ -145,63 +145,87 @@ app.post("/reset-password", async (req, res) => {
     }
   });
 
-app.post("/loginValidate",async(req,res)=>{
-    const {emailOrUsername,password}=req.body;
-    try{
-      const result=await pool.query("SELECT * FROM client WHERE email = $1 OR username = $1",[emailOrUsername]);
-      if(result.rows.length===0){
-        return res.status(401).json({error:"Invalid credentials"});
-      }
-     
-      const user=result.rows[0];
-      const matching=await bcrypt.compare(password,user.pass);
-      if(!matching){
-        return res.status(401).json({error:"Invalid credentials"});
-      }
-      if (!user.is_verified) {
-        const verificationCode = user.verify_code;
+app.post("/loginValidate", async (req, res) => {
+  const { emailOrUsername, password } = req.body;
 
-        // If verify_code is missing (shouldn't happen), return error
-        if (!verificationCode) {
-          return res.status(400).json({ error: "Missing verification code. Please contact support." });
-        }
+  try {
+    const result = await pool.query(
+      "SELECT * FROM client WHERE email = $1 OR username = $1",
+      [emailOrUsername]
+    );
 
-        const transporter = nodemailer.createTransport({
-          service: "gmail",
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-          },
-        });
-
-        const mailOptions = {
-          from: `"Eventure" <${process.env.EMAIL_USER}>`,
-          to: user.email,
-          subject: "Verify your Email",
-          html: `<p>Your existing verification code is: <b>${verificationCode}</b></p>`,
-        };
-
-        await transporter.sendMail(mailOptions);
-
-        return res.status(403).json({
-          error: "Unverified",
-          email: user.email,
-          isPlanner: false,
-        });
-      }
-
-      req.session.user = { id: user.id, role: "user" };
-      req.session.save(err => {
-      if (err) console.error("Session save error:", err);
-      res.status(200).json({ message: "Login success" });
-      });
-      delete user.pass; // to remove pass from user when sending it to front-end (security)
-      res.status(200).json(user);
-    }catch(err){
-      console.error("Login error",err);
-      res.status(500).json({error:"Internal server error"});
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: "Invalid credentials" });
     }
+
+    const user = result.rows[0];
+    const passwordMatch = await bcrypt.compare(password, user.pass);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // ✅ Handle Unverified Email
+    if (!user.is_verified) {
+      const verificationCode = user.verify_code;
+
+      if (!verificationCode) {
+        return res.status(400).json({
+          error: "Missing verification code. Please contact support.",
+        });
+      }
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+
+      const mailOptions = {
+        from: `"Eventure" <${process.env.EMAIL_USER}>`,
+        to: user.email,
+        subject: "Verify your Email",
+        html: `<p>Your verification code is: <b>${verificationCode}</b></p>`,
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      return res.status(403).json({
+        error: "Unverified",
+        email: user.email,
+        isPlanner: false,
+      });
+    }
+
+    // ✅ Set session after email is verified
+    req.session.user = {
+      id: user.id,
+      role: "user",
+    };
+
+    req.session.save((err) => {
+      if (err) {
+        console.error("Session save error:", err);
+        return res.status(500).json({ error: "Login failed (session)" });
+      }
+
+      // clean sensitive info
+      delete user.pass;
+      delete user.verify_code;
+
+      return res.status(200).json({
+        message: "Login success",
+        user,
+      });
+    });
+  } catch (err) {
+    console.error("Login error", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
+
 
 app.post("/updateUser/:id",(req,res)=>{
 const userId=req.params.id;
