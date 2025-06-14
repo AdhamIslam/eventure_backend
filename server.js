@@ -1,7 +1,22 @@
 // ✅ server.js (session with cookie cleared only on logout)
 const express = require("express");
-const session = require("express-session");
 const cors = require("cors");
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
+const session = require("express-session");
+app.use(session({
+  name: "sessionId",
+  secret: process.env.SESSION_SECRET || "keyboard cat",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // true in prod, false locally
+    sameSite: "lax"
+  }
+}));
 const bodyParser = require("body-parser");
 const dotenv = require("dotenv").config();
 const { Pool } = require("pg");
@@ -17,10 +32,6 @@ const pool = new Pool({
     rejectUnauthorized: false,
   },
 });
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true
-}));
 // Force HTTPS in production
 app.use((req, res, next) => {
   if (process.env.NODE_ENV === "production" && req.headers["x-forwarded-proto"] !== "https") {
@@ -30,15 +41,7 @@ app.use((req, res, next) => {
 });
 
 app.use(bodyParser.json());
-app.use(session({
-  secret: process.env.SESSION_SECRET || "super_secret_key",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production"
-  }
-}));
+
 
 app.listen(PORT, () => console.log(`✅ Server running on ${PORT}`));
 
