@@ -213,7 +213,11 @@ app.post("/loginValidate", async (req, res) => {
       }
 
       // clean sensitive info
-      delete user.pass;
+      const userData = result.rows[0];
+      delete userData.pass;
+      userData.role = role; // ✅ inject session role
+      res.status(200).json(userData);
+
       delete user.verify_code;
 
        res.status(200).json({ message: "Login success", user });
