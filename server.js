@@ -162,6 +162,7 @@ app.post("/loginValidate", async (req, res) => {
     }
 
     const user = result.rows[0];
+    const role = "user";
     const passwordMatch = await bcrypt.compare(password, user.pass);
 
     if (!passwordMatch) {
@@ -221,7 +222,7 @@ app.post("/loginValidate", async (req, res) => {
 
       // clean sensitive info
       
-      
+     
       delete user.verify_code;
       delete user.pass;
 
@@ -517,8 +518,10 @@ app.get("/checkSession", async (req, res) => {
   const col = role === "planner" ? "planner_id" : "client_id";
   const result = await pool.query(`SELECT * FROM ${table} WHERE ${col} = $1`, [id]);
   if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });
-  delete result.rows[0].pass;
-  res.status(200).json(result.rows[0]);
+  const userData = result.rows[0];
+  delete userData.pass;
+  userData.role = role;  // ✅ Inject the session role into the response
+  res.status(200).json(userData);
 });
 
 // ✅ Logout
