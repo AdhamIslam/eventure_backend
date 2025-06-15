@@ -410,7 +410,7 @@ app.post("/plannerLoginValidate",async(req,res)=>{
       return res.status(403).json({
         error: "Unverified",
         email: user.email,
-        isPlanner: tue,
+        isPlanner: true,
       });
     }
 
