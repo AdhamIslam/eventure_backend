@@ -14,9 +14,12 @@ const PORT = process.env.PORT || 4000;
 app.use(
   cors({
     origin: ["http://localhost:5173", "https://your-frontend.vercel.app"],
-    credentials: true, // ✅ Needed to accept cookies
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 
 // ✅ Trust Proxy (for Railway)
 app.set("trust proxy", 1);
@@ -48,6 +51,10 @@ app.use((req, res, next) => {
 });
 
 app.use(bodyParser.json());
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 
 // ✅ PostgreSQL setup
 const pool = new Pool({
