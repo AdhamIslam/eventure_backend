@@ -11,9 +11,6 @@ const crypto = require("crypto");
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// ✅ CORS Middleware
-const cors = require("cors");
-
 app.use(
   cors({
     origin: ["http://localhost:5173", "https://your-frontend.vercel.app"],
@@ -23,7 +20,7 @@ app.use(
 
 // ✅ Trust Proxy (for Railway)
 app.set("trust proxy", 1);
-app.options("*", cors()); // handles preflight
+//app.options("*", cors()); // handles preflight
 
 // ✅ Session Middleware
 const session = require("express-session");
