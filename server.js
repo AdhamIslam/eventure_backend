@@ -85,31 +85,26 @@ app.get("/clients",(req,res)=>{
 app.post("/forgotPassword", async (req, res) => {
   const { email, role } = req.body;
 
-  if (!role || (role !== "user" && role !== "planner")) {
-    return res.status(400).json({ error: "Invalid role" });
+  if (!email || !role) {
+    return res.status(400).json({ error: "Email and role are required." });
   }
 
   const table = role === "planner" ? "event_planner" : "client";
-  const emailField = "email";
-  const idField = role === "planner" ? "planner_id" : "client_id";
+  const idCol = role === "planner" ? "planner_id" : "client_id";
 
   try {
-    const userQuery = `SELECT * FROM ${table} WHERE ${emailField} = $1`;
-    const result = await pool.query(userQuery, [email]);
+    const result = await pool.query(`SELECT * FROM ${table} WHERE email = $1`, [email]);
 
     if (result.rows.length === 0) {
-      return res
-        .status(200)
-        .json({ message: "If the email is registered, a reset link has been sent." });
+      return res.status(200).json({ message: "If the email is registered, a reset link has been sent." });
     }
 
     const token = crypto.randomBytes(32).toString("hex");
-    const updateSql = `
-      UPDATE ${table}
-      SET reset_token = $1, reset_token_expiry = NOW() + interval '1 hour'
-      WHERE ${emailField} = $2
-    `;
-    await pool.query(updateSql, [token, email]);
+
+    await pool.query(
+      `UPDATE ${table} SET reset_token = $1, reset_token_expiry = NOW() + interval '1 hour' WHERE email = $2`,
+      [token, email]
+    );
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -120,20 +115,22 @@ app.post("/forgotPassword", async (req, res) => {
     });
 
     const resetLink = `http://localhost:5173/resetPassword?token=${token}&role=${role}`;
+
     const mailOptions = {
       to: email,
       subject: "Password Reset",
-      html: `<p>Click <a href="${resetLink}">here</a> to reset your password. This link will expire in 1 hour.</p>`,
+      html: `<p>Click <a href="${resetLink}">here</a> to reset your password. The link expires in 1 hour.</p>`,
     };
 
     await transporter.sendMail(mailOptions);
-    return res.status(200).json({ message: "Reset link sent" });
 
+    return res.status(200).json({ message: "Reset link sent" });
   } catch (err) {
     console.error("Forgot password error:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+
 
 
 app.post("/reset-password", async (req, res) => {
