@@ -1,24 +1,49 @@
-// ✅ server.js (session with cookie cleared only on logout)
+require("dotenv").config();
 const express = require("express");
-const session = require("express-session");
 const cors = require("cors");
+const session = require("express-session");
 const bodyParser = require("body-parser");
-const dotenv = require("dotenv").config();
 const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
+const nodemailer = require("nodemailer");
+const crypto = require("crypto");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    require: true,
-    rejectUnauthorized: false,
+// ✅ CORS Middleware
+app.use(cors({
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      "http://localhost:5173",
+      "https://your-frontend-domain.vercel.app"
+    ];
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
   },
-});
+  credentials: true
+}));
+// ✅ Trust Proxy (for Railway)
+app.set("trust proxy", 1);
+app.options("*", cors()); // handles preflight
 
-// Force HTTPS in production
+// ✅ Session Middleware
+app.use(session({
+  name: "sessionId",
+  secret: process.env.SESSION_SECRET || "secret",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // only in production
+    sameSite: "lax"
+  }
+}));
+
+// ✅ HTTPS redirect for production
 app.use((req, res, next) => {
   if (process.env.NODE_ENV === "production" && req.headers["x-forwarded-proto"] !== "https") {
     return res.redirect("https://" + req.headers.host + req.url);
@@ -26,21 +51,16 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true,
-}));
 app.use(bodyParser.json());
-app.use(session({
-  secret: process.env.SESSION_SECRET || "super_secret_key",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production"
-  }
-}));
+
+// ✅ PostgreSQL setup
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    require: true,
+    rejectUnauthorized: false,
+  },
+});
 
 app.listen(PORT, () => console.log(`✅ Server running on ${PORT}`));
 
@@ -125,59 +145,87 @@ app.post("/reset-password", async (req, res) => {
     }
   });
 
-app.post("/loginValidate",async(req,res)=>{
-    const {emailOrUsername,password}=req.body;
-    try{
-      const result=await pool.query("SELECT * FROM client WHERE email = $1 OR username = $1",[emailOrUsername]);
-      if(result.rows.length===0){
-        return res.status(401).json({error:"Invalid credentials"});
-      }
-     
-      const user=result.rows[0];
-      const matching=await bcrypt.compare(password,user.pass);
-      if(!matching){
-        return res.status(401).json({error:"Invalid credentials"});
-      }
-      if (!user.is_verified) {
-        const verificationCode = user.verify_code;
+app.post("/loginValidate", async (req, res) => {
+  const { emailOrUsername, password } = req.body;
 
-        // If verify_code is missing (shouldn't happen), return error
-        if (!verificationCode) {
-          return res.status(400).json({ error: "Missing verification code. Please contact support." });
-        }
+  try {
+    const result = await pool.query(
+      "SELECT * FROM client WHERE email = $1 OR username = $1",
+      [emailOrUsername]
+    );
 
-        const transporter = nodemailer.createTransport({
-          service: "gmail",
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-          },
-        });
-
-        const mailOptions = {
-          from: `"Eventure" <${process.env.EMAIL_USER}>`,
-          to: user.email,
-          subject: "Verify your Email",
-          html: `<p>Your existing verification code is: <b>${verificationCode}</b></p>`,
-        };
-
-        await transporter.sendMail(mailOptions);
-
-        return res.status(403).json({
-          error: "Unverified",
-          email: user.email,
-          isPlanner: false,
-        });
-      }
-
-      req.session.user = { id: user.client_id, role: "user" };
-      delete user.pass; // to remove pass from user when sending it to front-end (security)
-      res.status(200).json(user);
-    }catch(err){
-      console.error("Login error",err);
-      res.status(500).json({error:"Internal server error"});
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: "Invalid credentials" });
     }
+
+    const user = result.rows[0];
+    const passwordMatch = await bcrypt.compare(password, user.pass);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // ✅ Handle Unverified Email
+    if (!user.is_verified) {
+      const verificationCode = user.verify_code;
+
+      if (!verificationCode) {
+        return res.status(400).json({
+          error: "Missing verification code. Please contact support.",
+        });
+      }
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+
+      const mailOptions = {
+        from: `"Eventure" <${process.env.EMAIL_USER}>`,
+        to: user.email,
+        subject: "Verify your Email",
+        html: `<p>Your verification code is: <b>${verificationCode}</b></p>`,
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      return res.status(403).json({
+        error: "Unverified",
+        email: user.email,
+        isPlanner: false,
+      });
+    }
+
+    // ✅ Set session after email is verified
+    req.session.user = {
+      id: user.client_id,
+      role: "user",
+    };
+
+    req.session.save((err) => {
+      if (err) {
+        console.error("Session save error:", err);
+        return res.status(500).json({ error: "Login failed (session)" });
+      }
+
+      // clean sensitive info
+      delete user.pass;
+      delete user.verify_code;
+
+      return res.status(200).json({
+        message: "Login success",
+        user,
+      });
+    });
+  } catch (err) {
+    console.error("Login error", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
+
 
 app.post("/updateUser/:id",(req,res)=>{
 const userId=req.params.id;
@@ -466,11 +514,11 @@ app.get("/checkSession", async (req, res) => {
   res.status(200).json(result.rows[0]);
 });
 
+// ✅ Logout
 app.post("/logout", (req, res) => {
   req.session.destroy(err => {
     if (err) return res.status(500).json({ error: "Logout failed" });
-    res.clearCookie("connect.sid");
+    res.clearCookie("sessionId");
     res.status(200).json({ message: "Logged out" });
   });
 });
-
