@@ -223,7 +223,8 @@ app.post("/loginValidate", async (req, res) => {
       
       
       delete user.verify_code;
-      delete userData.pass;
+      delete user.pass;
+
       res.status(200).json({ message: "Login success", user });
     });
   } catch (err) {
