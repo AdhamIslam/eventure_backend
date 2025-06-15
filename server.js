@@ -221,7 +221,7 @@ app.post("/loginValidate", async (req, res) => {
 
       // clean sensitive info
       
-      userData.role = role; // ✅ inject session role
+      user.role = role; // ✅ inject session role
       delete user.verify_code;
       delete userData.pass;
       res.status(200).json({ message: "Login success", user });
