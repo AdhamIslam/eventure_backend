@@ -12,36 +12,36 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 // ✅ CORS Middleware
-app.use(cors({
-  origin: (origin, callback) => {
-    const allowedOrigins = [
-      "http://localhost:5173",
-      "https://your-frontend-domain.vercel.app"
-    ];
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true
-}));
+const cors = require("cors");
+
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "https://your-frontend.vercel.app"],
+    credentials: true, // ✅ Needed to accept cookies
+  })
+);
+
 // ✅ Trust Proxy (for Railway)
 app.set("trust proxy", 1);
 app.options("*", cors()); // handles preflight
 
 // ✅ Session Middleware
-app.use(session({
-  name: "sessionId",
-  secret: process.env.SESSION_SECRET || "secret",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // only in production
-    sameSite: "lax"
-  }
-}));
+const session = require("express-session");
+
+app.use(
+  session({
+    name: "connect.sid",
+    secret: process.env.SESSION_SECRET || "keyboard cat",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: true,                // ✅ Railway requires this
+      sameSite: "none",            // ✅ Required for cross-site cookies
+    },
+  })
+);
+
 
 // ✅ HTTPS redirect for production
 app.use((req, res, next) => {
@@ -203,22 +203,24 @@ app.post("/loginValidate", async (req, res) => {
     req.session.user = {
       id: user.client_id,
       role: "user",
+      email: user.email
     };
 
     req.session.save((err) => {
+
       if (err) {
-        console.error("Session save error:", err);
+
+        console.error("Session save error (user):", err);
+
         return res.status(500).json({ error: "Login failed (session)" });
+
       }
 
       // clean sensitive info
       delete user.pass;
       delete user.verify_code;
 
-      return res.status(200).json({
-        message: "Login success",
-        user,
-      });
+       res.status(200).json({ message: "Login success", user });
     });
   } catch (err) {
     console.error("Login error", err);
