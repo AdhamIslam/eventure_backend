@@ -360,23 +360,34 @@ app.get("/getClientProfileById/:id", async (req, res) => {
 //**************************************************************************planner****************************************************************** */
 
 app.post("/plannerLoginValidate",async(req,res)=>{
-  const {emailOrUsername,password}=req.body;
-  try{
-    const result=await pool.query("SELECT * FROM event_planner WHERE email = $1 OR username = $1",[emailOrUsername]);
-    if(result.rows.length===0){
-      return res.status(401).json({error:"Invalid Email or Username"});
+  const { emailOrUsername, password } = req.body;
+
+  try {
+    const result = await pool.query(
+      "SELECT * FROM event_planner WHERE email = $1 OR username = $1",
+      [emailOrUsername]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: "Invalid credentials" });
     }
-    const user=result.rows[0];
-    const matching=await bcrypt.compare(password,user.pass);
-    if(!matching){
-      return res.status(401).json({error:"Invalid credentials"});
+
+    const user = result.rows[0];
+    const role = "planner";
+    const passwordMatch = await bcrypt.compare(password, user.pass);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ error: "Invalid credentials" });
     }
+
+    // ✅ Handle Unverified Email
     if (!user.is_verified) {
       const verificationCode = user.verify_code;
 
-      // If verify_code is missing (shouldn't happen), return error
       if (!verificationCode) {
-        return res.status(400).json({ error: "Missing verification code. Please contact support." });
+        return res.status(400).json({
+          error: "Missing verification code. Please contact support.",
+        });
       }
 
       const transporter = nodemailer.createTransport({
@@ -391,7 +402,7 @@ app.post("/plannerLoginValidate",async(req,res)=>{
         from: `"Eventure" <${process.env.EMAIL_USER}>`,
         to: user.email,
         subject: "Verify your Email",
-        html: `<p>Your existing verification code is: <b>${verificationCode}</b></p>`,
+        html: `<p>Your verification code is: <b>${verificationCode}</b></p>`,
       };
 
       await transporter.sendMail(mailOptions);
@@ -399,19 +410,38 @@ app.post("/plannerLoginValidate",async(req,res)=>{
       return res.status(403).json({
         error: "Unverified",
         email: user.email,
-        isPlanner: false,
+        isPlanner: tue,
       });
     }
 
-    if(!user.enabled){
-      return res.status(400).json({ error: "Your account is pending please chaeck later!" });
-    }
-    req.session.user = { id: user.planner_id, role: "planner" };
-    delete user.pass; // to remove pass from user when sending it to front-end (security)
-    res.status(200).json(user);
-  }catch(err){
-    console.error("Login error",err);
-    res.status(500).json({error:"Internal server error"});
+    // ✅ Set session after email is verified
+    req.session.user = {
+      id: user.planner_id,
+      role: "planner",
+      email: user.email
+    };
+
+    req.session.save((err) => {
+
+      if (err) {
+
+        console.error("Session save error (user):", err);
+
+        return res.status(500).json({ error: "Login failed (session)" });
+
+      }
+
+      // clean sensitive info
+      
+     
+      delete user.verify_code;
+      delete user.pass;
+
+      res.status(200).json({ message: "Login success", user });
+    });
+  } catch (err) {
+    console.error("Login error", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
