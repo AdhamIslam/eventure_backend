@@ -22,8 +22,7 @@ app.use(
 app.set("trust proxy", 1);
 //app.options("*", cors()); // handles preflight
 
-// ✅ Session Middleware
-const session = require("express-session");
+
 
 app.use(
   session({
