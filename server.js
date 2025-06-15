@@ -220,13 +220,11 @@ app.post("/loginValidate", async (req, res) => {
       }
 
       // clean sensitive info
-      const userData = result.rows[0];    
+      
       userData.role = role; // ✅ inject session role
-      res.status(200).json(userData);
-
       delete user.verify_code;
       delete userData.pass;
-       res.status(200).json({ message: "Login success", user });
+      res.status(200).json({ message: "Login success", user });
     });
   } catch (err) {
     console.error("Login error", err);
