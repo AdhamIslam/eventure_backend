@@ -620,10 +620,12 @@ app.get("/detailedEvents", async (req, res) => {
         ? (min === 0 ? "Free" : `${min} L.E`)
         : `${min} L.E → ${max} L.E`;
 
+      const formattedDate = new Date(row.event_date).toISOString().split("T")[0];
+
       return {
         id: row.event_id,
         title: row.event_name,
-        date: row.event_date,
+        date: formattedDate,
         time: row.event_time,
         category: row.category,
         image: row.event_image_url || "/utils/Event.png",
@@ -638,4 +640,5 @@ app.get("/detailedEvents", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
 
