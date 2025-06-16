@@ -582,3 +582,14 @@ app.post("/logout", (req, res) => {
     res.status(200).json({ message: "Logged out" });
   });
 });
+
+//**************************************************************************Events****************************************************************** */
+app.get("/getAllEvents", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT event_id AS id, event_name AS title FROM events"); // adjust table/column names
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching events:", err);
+    res.status(500).json({ error: "Failed to fetch events" });
+  }
+});
