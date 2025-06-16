@@ -593,3 +593,49 @@ app.get("/getAllEvents", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch events" });
   }
 });
+
+app.get("/detailedEvents", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        e.event_id,
+        e.event_name,
+        e.event_date,
+        e.event_time,
+        e.category,
+        e.event_image_url,
+        MIN(tc.price) AS min_price,
+        MAX(tc.price) AS max_price,
+        SUM(tc.remaining_tickets) AS total_remaining
+      FROM events e
+      LEFT JOIN ticket_categories tc ON e.event_id = tc.event_id
+      GROUP BY e.event_id
+      ORDER BY e.event_date ASC
+    `);
+
+    const events = result.rows.map(row => {
+      const min = row.min_price || 0;
+      const max = row.max_price || 0;
+      const priceDisplay = min === max
+        ? (min === 0 ? "Free" : `${min} L.E`)
+        : `${min} L.E → ${max} L.E`;
+
+      return {
+        id: row.event_id,
+        title: row.event_name,
+        date: row.event_date,
+        time: row.event_time,
+        category: row.category,
+        image: row.event_image_url || "/utils/Event.png",
+        price: priceDisplay,
+        remaining: row.total_remaining ?? null,
+      };
+    });
+
+    res.status(200).json(events);
+  } catch (err) {
+    console.error("Error fetching events:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
