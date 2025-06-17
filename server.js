@@ -656,7 +656,8 @@ app.get("/plannerEvents", async (req, res) => {
          e.category, e.description, e.location, e.event_image_url
        FROM events e
        WHERE e.planner_id = $1
-       ORDER BY e.event_date ASC`,[plannerId]
+       ORDER BY e.event_date ASC`,
+       [plannerId]
     );
 
     const events = await Promise.all(
