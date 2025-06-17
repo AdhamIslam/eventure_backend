@@ -641,46 +641,5 @@ app.get("/detailedEvents", async (req, res) => {
   }
 });
 
-app.get("/plannerEvents", async (req, res) => {
-  const plannerId = req.query.plannerId;
 
-  if (!plannerId) {
-    return res.status(400).json({ error: "Missing plannerId" });
-  }
-
-  try {
-    // Fetch all events created by this planner
-    const eventsResult = await pool.query(
-      `SELECT 
-         e.event_id, e.event_name, e.event_date, e.event_time,
-         e.category, e.description, e.location, e.event_image_url
-       FROM events e
-       WHERE e.planner_id = $1
-       ORDER BY e.event_date ASC`,
-       [plannerId]
-    );
-
-    const events = await Promise.all(
-      eventsResult.rows.map(async (event) => {
-        // Fetch ticket categories for each event
-        const ticketResult = await pool.query(
-          `SELECT ticket_category_id, name, price, total_tickets, remaining_tickets
-           FROM ticket_categories
-           WHERE event_id = $1`,
-          [event.event_id]
-        );
-
-        return {
-          ...event,
-          tickets: ticketResult.rows,
-        };
-      })
-    );
-
-    res.status(200).json(events);
-  } catch (err) {
-    console.error("Error fetching planner events:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
 
