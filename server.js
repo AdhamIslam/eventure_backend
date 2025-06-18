@@ -679,7 +679,7 @@ app.get("/plannerEvents", async (req, res) => {
     res.status(200).json(events);
   } catch (err) {
     console.error("Error fetching planner events:", err);
-    res.status(200).json({ plannerId:"dfghjk" });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
