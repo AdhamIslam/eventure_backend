@@ -651,9 +651,7 @@ app.get("/plannerEvents", async (req, res) => {
   try {
     // Fetch all events created by this planner
     const eventsResult = await pool.query(
-      `SELECT 
-         e.event_id, e.event_name, e.event_date, e.event_time,
-         e.category, e.description, e.location, e.event_image_url
+      `SELECT e.event_id, e.event_name, e.event_date, e.event_time,e.category, e.event_description, e.event_address, e.event_image_url
        FROM events e
        WHERE e.planner_id = $1
        ORDER BY e.event_date ASC`,
