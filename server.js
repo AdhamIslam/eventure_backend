@@ -642,7 +642,7 @@ app.get("/detailedEvents", async (req, res) => {
 });
 
 app.get("/plannerEvents", async (req, res) => {
-  const plannerId = req.session.user.plannerId.id;
+  const plannerId = req.session.user.planner_id.id;
   console.log(plannerId);
 
   if (!plannerId) {
@@ -685,5 +685,5 @@ app.get("/plannerEvents", async (req, res) => {
 
 app.get("/ayneela",(req,res)=>{
   console.log(req.session.id);
-  res.status(200).json({ plannerId:req.session.user.plannerId.id });
+  res.status(200).json({ plannerId:req.session.user.planner_id.id });
 });
