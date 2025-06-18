@@ -643,6 +643,7 @@ app.get("/detailedEvents", async (req, res) => {
 
 app.get("/plannerEvents", async (req, res) => {
   const plannerId = req.session.user;
+  console.log(plannerId);
 
   if (!plannerId) {
     return res.status(400).json({ error: "Missing plannerId" });
@@ -678,7 +679,7 @@ app.get("/plannerEvents", async (req, res) => {
     res.status(200).json(events);
   } catch (err) {
     console.error("Error fetching planner events:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server errorrrrrrrrrr" });
   }
 });
 
