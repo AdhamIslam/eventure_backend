@@ -642,7 +642,7 @@ app.get("/detailedEvents", async (req, res) => {
 });
 
 app.get("/plannerEvents", async (req, res) => {
-  const plannerId = req.session.planner_id;
+  const plannerId = req.session.user;
 
   if (!plannerId) {
     return res.status(400).json({ error: "Missing plannerId" });
@@ -686,5 +686,5 @@ app.get("/plannerEvents", async (req, res) => {
 
 app.get("/ayneela",(req,res)=>{
   console.log(req.session.id);
-  res.status(200).json({ plannerId:req.session.user.id });
+  res.status(200).json({ plannerId:req.session.user?.id });
 });
