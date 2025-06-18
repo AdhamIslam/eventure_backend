@@ -642,8 +642,8 @@ app.get("/detailedEvents", async (req, res) => {
 });
 
 app.get("/plannerEvents", async (req, res) => {
-  const plannerId = req.session.user.planner_id.id;
-  console.log(plannerId);
+  const user = req.session.user;
+  const plannerId = user.id;
 
   if (!plannerId) {
     return res.status(400).json({ error: "Missing plannerId" });
