@@ -685,5 +685,5 @@ app.get("/plannerEvents", async (req, res) => {
 
 app.get("/ayneela",(req,res)=>{
   console.log(req.session.id);
-  res.status(200).json({ plannerId:req.session.user.plannerId });
+  res.status(200).json({ plannerId:req.session.user });
 });
