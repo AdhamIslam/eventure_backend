@@ -662,9 +662,9 @@ app.get("/plannerEvents", async (req, res) => {
       eventsResult.rows.map(async (event) => {
         // Fetch ticket categories for each event
         const ticketResult = await pool.query(
-          `SELECT ticket_category_id, name, price, total_tickets, remaining_tickets
+          `SELECT category_id, category, price, total_tickets, remaining_tickets
            FROM ticket_categories
-           WHERE event_id = $1`,
+           WHERE event_id =  $1`,
           [event.event_id]
         );
 
