@@ -606,8 +606,8 @@ app.post("/saveTickets", async (req, res) => {
       const { name, price, totalTickets } = ticket;
 
       await client.query(
-        `INSERT INTO ticket_categories (event_id, category, price, total_tickets)
-         VALUES ($1, $2, $3, $4)`,
+        `INSERT INTO ticket_categories (event_id, category, price, total_tickets,remaining_tickets)
+         VALUES ($1, $2, $3, $4,$4)`,
         [eventId, name, price, totalTickets === "Unlimited" ? null : totalTickets]
       );
     }
