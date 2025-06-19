@@ -516,16 +516,76 @@ app.post("/plannerSignUp", async (req, res) => {
 
 
 
-app.post("/createEvent",(req,res)=>{
-  const {plannerId, eventName, date, time, location, minAge, category, description} = req.body;
+app.post("/createEvent", async (req, res) => {
+  const {
+    eventName,
+    date,
+    time,
+    location,
+    minAge,
+    category,
+    description,
+    address1,
+    address2,
+    city,
+    state,
+    zipCode,
+    county,
+    full_address,
+    latitude,
+    longitude,
+  } = req.body;
+  const user = req.session.user
+  const plannerId = user.id;
 
-  const sqlQuery = `INSERT INTO events (planner_id,event_name,event_date,event_address,min_age,category,event_time,event_description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8);`
+  if (!plannerId) {
+    return res.status(401).json({ error: "Unauthorized: Missing session" });
+  }
 
-  pool.query(sqlQuery, [plannerId, eventName, date, location, minAge, category, time,description], (checkErr, checkResult)=>{
-      if (checkErr) return res.status(500).json({ error: "Database error during check" });
-      return res.sendStatus(201);});
+  const sqlQuery = `
+    INSERT INTO events (
+      planner_id, event_name, event_date, event_time,
+      event_address, min_age, category, event_description,
+      address_line_1, address_line_2, city, state, zip_code,
+      county, full_address, latitude, longitude
+    ) VALUES (
+      $1, $2, $3, $4,
+      $5, $6, $7, $8,
+      $9, $10, $11, $12, $13,
+      $14, $15, $16, $17
+    )
+    RETURNING event_id;
+  `;
 
+  try {
+    const result = await pool.query(sqlQuery, [
+      plannerId,
+      eventName,
+      date,
+      time,
+      location,
+      minAge,
+      category,
+      description,
+      address1,
+      address2,
+      city,
+      state,
+      zipCode,
+      county,
+      full_address,
+      latitude,
+      longitude,
+    ]);
+
+    const eventId = result.rows[0].event_id;
+    return res.status(201).json({ message: "Event created", eventId });
+  } catch (err) {
+    console.error("Error creating event:", err);
+    return res.status(500).json({ error: "Database error" });
+  }
 });
+
 
 
 app.post("/saveTickets", async (req, res) => {
