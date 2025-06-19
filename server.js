@@ -533,38 +533,39 @@ app.post("/createEvent", async (req, res) => {
     county,
     full_address,
     latitude,
-    longitude,
+    longitude
   } = req.body;
   const user = req.session.user
   const plannerId = user.id;
 
   if (!plannerId) {
-    return res.status(401).json({ error: "Unauthorized: Missing session" });
+    return res.status(401).json({ error: "Unauthorized: no planner session" });
   }
 
-  const sqlQuery = `
-    INSERT INTO events (
-      planner_id, event_name, event_date, event_time,
-      event_address, min_age, category, event_description,
-      address_line_1, address_line_2, city, state, zip_code,
-      county, full_address, latitude, longitude
-    ) VALUES (
-      $1, $2, $3, $4,
-      $5, $6, $7, $8,
-      $9, $10, $11, $12, $13,
-      $14, $15, $16, $17
-    )
-    RETURNING event_id;
-  `;
-
   try {
-    const result = await pool.query(sqlQuery, [
+    const query = `
+      INSERT INTO events (
+        planner_id, event_name, event_date, event_time, 
+        event_address, min_age, category, event_description,
+        address_line_1, address_line_2, city, state, zip_code,
+        county, full_address, latitude, longitude
+      )
+      VALUES (
+        $1, $2, $3, $4,
+        $5, $6, $7, $8,
+        $9, $10, $11, $12, $13,
+        $14, $15, $16, $17
+      )
+      RETURNING event_id
+    `;
+
+    const values = [
       plannerId,
       eventName,
       date,
       time,
       location,
-      minAge,
+      minAge || null,
       category,
       description,
       address1,
@@ -574,17 +575,19 @@ app.post("/createEvent", async (req, res) => {
       zipCode,
       county,
       full_address,
-      latitude,
-      longitude,
-    ]);
+      latitude || null,
+      longitude || null
+    ];
 
-    const eventId = result.rows[0].event_id;
-    return res.status(201).json({ message: "Event created", eventId });
+    const result = await pool.query(query, values);
+
+    return res.status(201).json({ message: "Event created", eventId: result.rows[0].event_id });
   } catch (err) {
-    console.error("Error creating event:", err);
-    return res.status(500).json({ error: "Database error" });
+    console.error("Database error:", err);
+    return res.status(500).json({ error: "Database insert error" });
   }
 });
+
 
 
 
