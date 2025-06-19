@@ -521,7 +521,6 @@ app.post("/createEvent", async (req, res) => {
     eventName,
     date,
     time,
-    location,
     minAge,
     category,
     description,
@@ -546,7 +545,7 @@ app.post("/createEvent", async (req, res) => {
     const query = `
       INSERT INTO events (
         planner_id, event_name, event_date, event_time, 
-        event_address, min_age, category, event_description,
+         min_age, category, event_description,
         address_line_1, address_line_2, city, state, zip_code,
         county, full_address, latitude, longitude
       )
@@ -564,7 +563,6 @@ app.post("/createEvent", async (req, res) => {
       eventName,
       date,
       time,
-      location,
       minAge || null,
       category,
       description,
