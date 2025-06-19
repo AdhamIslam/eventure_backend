@@ -763,3 +763,26 @@ app.get("/ayneela",(req,res)=>{
   const user = req.session.user;
   res.status(200).json({ plannerId:user.id });
 });
+
+
+app.get("/reverse-geocode", async (req, res) => {
+  const { lat, lon } = req.query;
+
+  try {
+    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`, {
+      headers: {
+        "User-Agent": "eventure-app/1.0 (youremail@example.com)"
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Nominatim API failed");
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error("Reverse geocoding error:", err);
+    res.status(500).json({ error: "Failed to fetch address" });
+  }
+});
