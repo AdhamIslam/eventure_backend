@@ -583,9 +583,10 @@ app.post("/createEvent", async (req, res) => {
 
     return res.status(201).json({ message: "Event created", eventId: result.rows[0].event_id });
   } catch (err) {
-    console.error("Database error:", err);
-    return res.status(500).json({ error: "Database insert error" });
+  console.error("❌ Database error:", err);  // This line is critical to show the root cause
+  return res.status(500).json({ error: "Database insert error" });
   }
+
 });
 
 
