@@ -668,10 +668,26 @@ app.get("/plannerEvents", async (req, res) => {
            WHERE event_id =  $1`,
           [event.event_id]
         );
+         const formattedDate = new Date(event.event_date).toISOString().split("T")[0];
+    const formattedTime = event.event_time
+      ? new Date(`1970-01-01T${event.event_time}`).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        })
+      : null;
 
+    const totalRemainingTickets = ticketResult.rows.reduce(
+      (sum, t) => sum + (t.remaining_tickets || 0),
+      0
+    );
         return {
           ...event,
+          event_date: formattedDate,
+          event_time: formattedTime,
           tickets: ticketResult.rows,
+          total_remaining: totalRemainingTickets,
+          
         };
       })
     );
