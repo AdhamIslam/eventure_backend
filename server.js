@@ -879,3 +879,21 @@ app.get("/getPlannerName/:plannerId", async (req, res) => {
   }
 });
 
+app.get("/tickets/:eventId", async (req, res) => {
+  const eventId = req.params.eventId;
+
+  try {
+    const result = await pool.query(
+      "SELECT ticket_category, ticket_price FROM ticket WHERE event_id = $1",
+      [eventId]
+    );
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error fetching tickets:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+
