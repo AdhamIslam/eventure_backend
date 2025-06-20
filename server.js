@@ -7,7 +7,10 @@ const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
-
+const multer = require("multer");
+const supabase = require("./supabaseClient");
+const upload = multer(); // use memory storage
+const router = express.Router();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
@@ -589,6 +592,37 @@ app.post("/createEvent", async (req, res) => {
 
 });
 
+router.post("/uploadEventImage", upload.single("image"), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+
+  try {
+    const fileExt = req.file.originalname.split(".").pop();
+    const fileName = `event_${Date.now()}.${fileExt}`;
+
+    // Upload to the root of "events-images"
+    const { error: uploadError } = await supabase.storage
+      .from("events-images")
+      .upload(fileName, req.file.buffer, {
+        contentType: req.file.mimetype,
+      });
+
+    if (uploadError) {
+      console.error("Supabase Upload Error:", uploadError);
+      return res.status(500).json({ error: "Failed to upload image" });
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("events-images")
+      .getPublicUrl(fileName);
+
+    return res.status(200).json({ url: publicUrlData.publicUrl });
+  } catch (err) {
+    console.error("❌ Upload error:", err);
+    return res.status(500).json({ error: "Server error while uploading image" });
+  }
+});
 
 
 
