@@ -13,7 +13,7 @@ const upload = multer(); // use memory storage
 const router = express.Router();
 const app = express();
 const PORT = process.env.PORT || 4000;
-
+app.use("/", eventRoutes);
 app.use(
   cors({
     origin: ["http://localhost:5173", "https://your-frontend.vercel.app"],
