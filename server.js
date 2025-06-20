@@ -13,6 +13,7 @@ const upload = multer(); // use memory storage
 const router = express.Router();
 const app = express();
 const PORT = process.env.PORT || 4000;
+const eventRoutes = require("./routes/eventRoutes");
 app.use("/", eventRoutes);
 app.use(
   cors({
