@@ -530,7 +530,7 @@ app.post("/createEvent", async (req, res) => {
     city,
     state,
     zipCode,
-    county,
+    country,
     full_address,
     latitude,
     longitude
@@ -548,7 +548,7 @@ app.post("/createEvent", async (req, res) => {
         planner_id, event_name, event_date, event_time, 
          min_age,max_age, category, event_description,
         address_line_1, address_line_2, city, state, zip_code,
-        county, full_address, latitude, longitude
+        country, full_address, latitude, longitude
       )
       VALUES (
         $1, $2, $3, $4,
@@ -573,7 +573,7 @@ app.post("/createEvent", async (req, res) => {
       city,
       state,
       zipCode,
-      county,
+      country,
       full_address,
       latitude || null,
       longitude || null
