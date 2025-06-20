@@ -845,3 +845,20 @@ app.delete("/deleteEvent/:eventId", async (req, res) => {
   }
 });
 
+app.get("/event/:eventId", async (req, res) => {
+  const { eventId } = req.params;
+
+  try {
+    const result = await pool.query("SELECT * FROM events WHERE event_id = $1", [eventId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Error fetching event:", err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
