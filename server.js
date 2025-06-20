@@ -536,7 +536,8 @@ app.post("/createEvent", async (req, res) => {
     country,
     full_address,
     latitude,
-    longitude
+    longitude,
+    imageUrl
   } = req.body;
   const user = req.session.user
   const plannerId = user.id;
@@ -551,13 +552,13 @@ app.post("/createEvent", async (req, res) => {
         planner_id, event_name, event_date, event_time, 
          min_age,max_age, category, event_description,
         address_line_1, address_line_2, city, state, zip_code,
-        country, full_address, latitude, longitude
+        country, full_address, latitude, longitude,event_image_url
       )
       VALUES (
         $1, $2, $3, $4,
         $5, $6, $7, $8,
         $9, $10, $11, $12, $13,
-        $14, $15, $16 , $17
+        $14, $15, $16 , $17,$18
       )
       RETURNING event_id
     `;
@@ -579,7 +580,8 @@ app.post("/createEvent", async (req, res) => {
       country,
       full_address,
       latitude || null,
-      longitude || null
+      longitude || null,
+      imageUrl || null
     ];
 
     const result = await pool.query(query, values);
