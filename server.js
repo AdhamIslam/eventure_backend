@@ -884,7 +884,7 @@ app.get("/tickets/:eventId", async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT ticket_category, ticket_price FROM ticket WHERE event_id = $1",
+      "SELECT category, price FROM ticket_categories WHERE event_id = $1",
       [eventId]
     );
 
