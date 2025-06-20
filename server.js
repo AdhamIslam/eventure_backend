@@ -862,7 +862,7 @@ app.get("/event/:eventId", async (req, res) => {
   }
 });
 
-app.get("/getPlannerName", async (req, res) => {
+app.get("/getPlannerName/:plannerId", async (req, res) => {
   const { plannerId } = req.params;
 
   try {
