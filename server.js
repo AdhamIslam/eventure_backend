@@ -13,8 +13,7 @@ const upload = multer(); // use memory storage
 const router = express.Router();
 const app = express();
 const PORT = process.env.PORT || 4000;
-const eventRoutes = require("./routes/eventRoutes");
-app.use("/", eventRoutes);
+
 app.use(
   cors({
     origin: ["http://localhost:5173", "https://your-frontend.vercel.app"],
@@ -595,7 +594,7 @@ app.post("/createEvent", async (req, res) => {
 
 });
 
-router.post("/uploadEventImage", upload.single("image"), async (req, res) => {
+app.post("/uploadEventImage", upload.single("image"), async (req, res) =>  {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
