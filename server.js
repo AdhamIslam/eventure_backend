@@ -788,3 +788,22 @@ app.get("/reverse-geocode", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch address" });
   }
 });
+
+// DELETE /deleteEvent/:eventId
+app.delete("/deleteEvent/:eventId", async (req, res) => {
+  const eventId = req.params.eventId;
+
+  try {
+    // First delete related ticket categories (if foreign key ON DELETE CASCADE is not set)
+    //await pool.query("DELETE FROM ticket_categories WHERE event_id = $1", [eventId]);
+
+    // Then delete the event itself
+    await pool.query("DELETE FROM events WHERE event_id = $1", [eventId]);
+
+    res.status(200).json({ message: "Event deleted successfully" });
+  } catch (error) {
+    console.error("Delete event error:", error);
+    res.status(500).json({ error: "Failed to delete event" });
+  }
+});
+
