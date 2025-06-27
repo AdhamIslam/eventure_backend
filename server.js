@@ -896,10 +896,12 @@ app.get("/tickets/:eventId", async (req, res) => {
 });
 
 app.post("/setSelectedTickets", (req, res) => {
-  const { selectedTickets } = req.body;
+  const { selectedTickets, totalPrice } = req.body;
   req.session.selectedTickets = selectedTickets;
+  req.session.totalPrice = totalPrice;
   res.json({ success: true });
 });
+
 
 
 
