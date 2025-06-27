@@ -13,7 +13,7 @@ const upload = multer(); // use memory storage
 const router = express.Router();
 const app = express();
 const PORT = process.env.PORT || 4000;
-
+const QRCode = require("qrcode") ;
 app.use(
   cors({
     origin: ["http://localhost:5173", "https://your-frontend.vercel.app"],
@@ -938,7 +938,7 @@ app.post("/verify-otp", (req, res) => {
 });
 
 
-import QRCode from "qrcode";
+
 
 app.get("/generate-qr", async (req, res) => {
   const ticketData = req.session.selectedTickets;
