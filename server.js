@@ -951,3 +951,12 @@ app.get("/generate-qr", async (req, res) => {
   const qrImage = await QRCode.toDataURL(qrText);
   res.json({ qrImage });
 });
+
+app.get("/getSelectedTickets", (req, res) => {
+  if (!req.session.selectedTickets) {
+    return res.status(404).json({ error: "No ticket selection found in session." });
+  }
+
+  res.json({ selectedTickets: req.session.selectedTickets });
+});
+
