@@ -895,5 +895,59 @@ app.get("/tickets/:eventId", async (req, res) => {
   }
 });
 
+app.post("/setSelectedTickets", (req, res) => {
+  const { selectedTickets } = req.body;
+  req.session.selectedTickets = selectedTickets;
+  res.json({ success: true });
+});
 
 
+
+app.post("/send-otp", async (req, res) => {
+  const userEmail = req.session.user?.email;
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  req.session.otp = otp;
+
+  const transporter = nodemailer.createTransport({
+    service: "Gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: `"Eventure" <${process.env.EMAIL_USER}>`,
+    to: userEmail,
+    subject: "Confirm Your Ticket Purchase",
+    text: `Your OTP is: ${otp}`,
+  });
+
+  res.json({ success: true });
+});
+
+
+app.post("/verify-otp", (req, res) => {
+  const { otp } = req.body;
+  if (req.session.otp === otp) {
+    delete req.session.otp;
+    return res.json({ success: true });
+  }
+  res.status(400).json({ error: "Invalid OTP" });
+});
+
+
+import QRCode from "qrcode";
+
+app.get("/generate-qr", async (req, res) => {
+  const ticketData = req.session.selectedTickets;
+
+  const qrText = JSON.stringify({
+    user: req.session.user,
+    tickets: ticketData,
+  });
+
+  const qrImage = await QRCode.toDataURL(qrText);
+  res.json({ qrImage });
+});
