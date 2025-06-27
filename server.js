@@ -955,10 +955,21 @@ app.get("/generate-qr", async (req, res) => {
 });
 
 app.get("/getSelectedTickets", (req, res) => {
-  if (!req.session.selectedTickets) {
-    return res.status(404).json({ error: "No ticket selection found in session." });
+  const selectedTickets = req.session.selectedTickets;
+
+  if (!selectedTickets || !Array.isArray(selectedTickets)) {
+    return res.status(404).json({ success: false, error: "No ticket selection found in session." });
   }
 
-  res.json({ selectedTickets: req.session.selectedTickets });
+  const totalPrice = selectedTickets.reduce((sum, ticket) => {
+    return sum + (ticket.price * ticket.quantity);
+  }, 0);
+
+  res.json({
+    success: true,
+    selectedTickets,
+    totalPrice: totalPrice.toFixed(2)
+  });
 });
+
 
