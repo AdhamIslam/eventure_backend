@@ -972,4 +972,68 @@ app.get("/getSelectedTickets", (req, res) => {
   });
 });
 
+app.post("/confirmPurchase", async (req, res) => {
+  const clientId = req.session.user?.client_id;
+  const selectedTickets = req.session.selectedTickets;
+
+  if (!clientId || !selectedTickets) {
+    return res.status(400).json({ error: "Missing user or ticket data." });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    for (const ticket of selectedTickets) {
+      const { category_id, eventId, quantity ,category_name} = ticket;
+
+      // Step 1: Lock the row to prevent race conditions
+      const result = await client.query(
+        "SELECT remaining_tickets FROM ticket_categories WHERE category_id = $1 FOR UPDATE",
+        [category_id]
+      );
+
+      if (result.rows.length === 0) {
+        throw new Error("Invalid category ID.");
+      }
+
+      const remaining = result.rows[0].remaining_tickets;
+
+      if (remaining < quantity) {
+        throw new Error(`Only ${remaining} tickets left in category ${category_name}`);
+      }
+
+      // Step 2: Deduct the quantity
+      await client.query(
+        "UPDATE ticket_categories SET remaining_tickets = remaining_tickets - $1 WHERE category_id = $2",
+        [quantity, category_id]
+      );
+
+      // Step 3: Insert individual ticket records
+      const insertPromises = [];
+      for (let i = 0; i < quantity; i++) {
+        insertPromises.push(
+          client.query(
+            "INSERT INTO tickets (ticket_id, event_id, client_id, category_id) VALUES (gen_random_uuid(), $1, $2, $3)",
+            [eventId, clientId, category_id]
+          )
+        );
+      }
+
+      await Promise.all(insertPromises);
+    }
+
+    await client.query("COMMIT");
+    delete req.session.selectedTickets;
+
+    res.json({ success: true });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Purchase Error:", err);
+    res.status(500).json({ error: err.message || "Failed to confirm purchase." });
+  } finally {
+    client.release();
+  }
+});
 
