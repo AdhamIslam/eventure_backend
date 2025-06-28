@@ -896,9 +896,10 @@ app.get("/tickets/:eventId", async (req, res) => {
 });
 
 app.post("/setSelectedTickets", (req, res) => {
-  const { selectedTickets, totalPrice } = req.body;
+  const { selectedTickets, totalPrice,eventId } = req.body;
   req.session.selectedTickets = selectedTickets;
   req.session.totalPrice = totalPrice;
+  req.session.eventId=eventId;
   res.json({ success: true });
 });
 
@@ -1028,11 +1029,12 @@ app.get("/getSelectedTickets", (req, res) => {
   const totalPrice = selectedTickets.reduce((sum, ticket) => {
     return sum + (ticket.price * ticket.quantity);
   }, 0);
-
+  const eventId=req.session.eventId;
   res.json({
     success: true,
     selectedTickets,
-    totalPrice: totalPrice.toFixed(2)
+    totalPrice: totalPrice.toFixed(2),
+    eventId:eventId
   });
 });
 
