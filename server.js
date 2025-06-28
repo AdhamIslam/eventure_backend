@@ -1042,7 +1042,8 @@ app.post("/confirmPurchase", async (req, res) => {
   const user=req.session.user;
   const clientId = user.client_id;
   const selectedTickets = req.session.selectedTickets;
-
+  console.log(clientId);
+  console.log(selectedTickets);
   if (!clientId || !selectedTickets) {
     return res.status(400).json({ error: "Missing user or ticket data." });
   }
