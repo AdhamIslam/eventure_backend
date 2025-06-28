@@ -1039,7 +1039,8 @@ app.get("/getSelectedTickets", (req, res) => {
 });
 
 app.post("/confirmPurchase", async (req, res) => {
-  const clientId = req.session.user?.client_id;
+  const user=req.session.user;
+  const clientId = user.client_id;
   const selectedTickets = req.session.selectedTickets;
 
   if (!clientId || !selectedTickets) {
