@@ -1040,8 +1040,9 @@ app.get("/getSelectedTickets", (req, res) => {
 
 app.post("/confirmPurchase", async (req, res) => {
   const user=req.session.user;
-  const clientId = user.client_id;
+  const clientId = user.id;
   const selectedTickets = req.session.selectedTickets;
+  const eventId=req.session.eventId;
   console.log(user);
   console.log(selectedTickets);
   if (!clientId || !selectedTickets) {
@@ -1054,7 +1055,7 @@ app.post("/confirmPurchase", async (req, res) => {
     await client.query("BEGIN");
 
     for (const ticket of selectedTickets) {
-      const { category_id, eventId, quantity ,category_name} = ticket;
+      const { category_id, quantity ,category_name} = ticket;
 
       // Step 1: Lock the row to prevent race conditions
       const result = await client.query(
@@ -1081,6 +1082,7 @@ app.post("/confirmPurchase", async (req, res) => {
       // Step 3: Insert individual ticket records
       const insertPromises = [];
       for (let i = 0; i < quantity; i++) {
+        console.log(eventId);
         insertPromises.push(
           client.query(
             "INSERT INTO tickets (ticket_id, event_id, client_id, category_id) VALUES (gen_random_uuid(), $1, $2, $3)",
