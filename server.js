@@ -945,7 +945,7 @@ app.post("/verify-otp", (req, res) => {
 app.get("/generate-qr", async (req, res) => {
   const user = req.session.user;
 
-  if (!user?.client_id || !user?.email) {
+  if (!user?.id || !user?.email) {
     return res.status(400).json({ error: "Missing user session data." });
   }
 
@@ -958,7 +958,7 @@ app.get("/generate-qr", async (req, res) => {
        JOIN event e ON t.event_id = e.event_id
        WHERE t.client_id = $1
        ORDER BY t.created_at DESC`, 
-      [user.client_id]
+      [user.id]
     );
 
     if (tickets.length === 0) {
@@ -1001,7 +1001,6 @@ app.get("/generate-qr", async (req, res) => {
       to: user.email,
       subject: "Your Eventure Tickets",
       html: `
-        <h2>Hello ${user.username || "Guest"},</h2>
         <p>Here are your tickets. Please show the QR codes at event entry:</p>
         ${attachments.map(
           (a) => `<div><img src="cid:${a.cid}" alt="QR" style="max-width:200px; margin:10px;" /></div>`
