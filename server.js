@@ -941,18 +941,82 @@ app.post("/verify-otp", (req, res) => {
 
 
 
-
 app.get("/generate-qr", async (req, res) => {
-  const ticketData = req.session.selectedTickets;
+  const user = req.session.user;
 
-  const qrText = JSON.stringify({
-    user: req.session.user,
-    tickets: ticketData,
-  });
+  if (!user?.client_id || !user?.email) {
+    return res.status(400).json({ error: "Missing user session data." });
+  }
 
-  const qrImage = await QRCode.toDataURL(qrText);
-  res.json({ qrImage });
+  try {
+    // 1. Fetch the recently purchased tickets (assuming you want the latest session-based ones)
+    const { rows: tickets } = await pool.query(
+      `SELECT t.ticket_id, t.event_id, tc.category, e.event_name
+       FROM tickets t
+       JOIN ticket_categories tc ON t.category_id = tc.category_id
+       JOIN event e ON t.event_id = e.event_id
+       WHERE t.client_id = $1
+       ORDER BY t.created_at DESC`, 
+      [user.client_id]
+    );
+
+    if (tickets.length === 0) {
+      return res.status(404).json({ error: "No tickets found." });
+    }
+
+    const attachments = [];
+
+    for (const ticket of tickets) {
+      const qrPayload = {
+        ticket_id: ticket.ticket_id,
+        event_id: ticket.event_id,
+        event_name: ticket.event_name,
+        category: ticket.category,
+        client: user,
+      };
+
+      const qrDataUrl = await QRCode.toDataURL(JSON.stringify(qrPayload));
+
+      // Push as attachment
+      attachments.push({
+        filename: `ticket-${ticket.ticket_id}.png`,
+        content: qrDataUrl.split("base64,")[1],
+        encoding: "base64",
+        cid: `${ticket.ticket_id}@eventure`,
+      });
+    }
+
+    // 2. Send email with QR codes
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: `"Eventure" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: "Your Eventure Tickets",
+      html: `
+        <h2>Hello ${user.username || "Guest"},</h2>
+        <p>Here are your tickets. Please show the QR codes at event entry:</p>
+        ${attachments.map(
+          (a) => `<div><img src="cid:${a.cid}" alt="QR" style="max-width:200px; margin:10px;" /></div>`
+        ).join("")}
+      `,
+      attachments: attachments,
+    });
+
+    res.json({ success: true, ticketsSent: attachments.length });
+
+  } catch (err) {
+    console.error("Error generating QR codes:", err);
+    res.status(500).json({ error: "Failed to generate or send QR codes." });
+  }
 });
+
 
 app.get("/getSelectedTickets", (req, res) => {
   const selectedTickets = req.session.selectedTickets;
