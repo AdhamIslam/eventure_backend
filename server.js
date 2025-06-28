@@ -955,9 +955,8 @@ app.get("/generate-qr", async (req, res) => {
       `SELECT t.ticket_id, t.event_id, tc.category, e.event_name
        FROM tickets t
        JOIN ticket_categories tc ON t.category_id = tc.category_id
-       JOIN event e ON t.event_id = e.event_id
-       WHERE t.client_id = $1
-       ORDER BY t.created_at DESC`, 
+       JOIN events e ON t.event_id = e.event_id
+       WHERE t.client_id = $1`, 
       [user.id]
     );
 
