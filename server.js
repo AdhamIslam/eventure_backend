@@ -1105,3 +1105,53 @@ app.post("/confirmPurchase", async (req, res) => {
   }
 });
 
+app.put("/plannerUpdateProfile", async (req, res) => {
+  const user = req.session.user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const { username, email, docs } = req.body;
+
+  try {
+    await pool.query(
+      "UPDATE event_planner SET username = $1, email = $2, docs = $3 WHERE planner_id = $4",
+      [username, email, docs, user.planner_id]
+    );
+
+    // Optionally update session data
+    
+    req.session.user.email = email;
+    
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Update failed:", err);
+    res.status(500).json({ error: "Failed to update profile" });
+  }
+});
+
+
+
+app.post("/plannerChangePassword", async (req, res) => {
+  const user = req.session.user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+  const { current, new: newPassword, confirm } = req.body;
+
+  try {
+    const result = await pool.query("SELECT pass FROM event_planner WHERE planner_id = $1", [user.planner_id]);
+    const hashedPassword = result.rows[0].pass;
+
+    const valid = await bcrypt.compare(current, hashedPassword);
+    if (!valid) return res.status(400).json({ error: "Current password is incorrect" });
+
+    if (newPassword !== confirm) return res.status(400).json({ error: "New passwords do not match" });
+
+    const hashedNew = await bcrypt.hash(newPassword, 10);
+    await pool.query("UPDATE event_planner SET pass = $1 WHERE planner_id = $2", [hashedNew, user.planner_id]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Password change error:", err);
+    res.status(500).json({ error: "Error changing password" });
+  }
+});
