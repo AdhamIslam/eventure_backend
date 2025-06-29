@@ -1138,7 +1138,7 @@ app.post("/plannerChangePassword", async (req, res) => {
   const { current, new: newPassword, confirm } = req.body;
 
   try {
-    const result = await pool.query("SELECT pass FROM event_planner WHERE planner_id = $1", [user.planner_id]);
+    const result = await pool.query("SELECT * FROM event_planner WHERE planner_id = $1", [user.planner_id]);
     const hashedPassword = result.rows[0].pass;
 
     const valid = await bcrypt.compare(current, hashedPassword);
