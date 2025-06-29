@@ -1114,7 +1114,7 @@ app.put("/plannerUpdateProfile", async (req, res) => {
   try {
     await pool.query(
       "UPDATE event_planner SET username = $1, email = $2, docs = $3 WHERE planner_id = $4",
-      [username, email, docs, user.planner_id]
+      [username, email, docs, user.id]
     );
 
     // Optionally update session data
@@ -1138,7 +1138,7 @@ app.post("/plannerChangePassword", async (req, res) => {
   const { current, new: newPassword, confirm } = req.body;
 
   try {
-    const result = await pool.query("SELECT * FROM event_planner WHERE planner_id = $1", [user.planner_id]);
+    const result = await pool.query("SELECT * FROM event_planner WHERE planner_id = $1", [user.id]);
     const hashedPassword = result.rows[0].pass;
 
     const valid = await bcrypt.compare(current, hashedPassword);
@@ -1147,7 +1147,7 @@ app.post("/plannerChangePassword", async (req, res) => {
     if (newPassword !== confirm) return res.status(400).json({ error: "New passwords do not match" });
 
     const hashedNew = await bcrypt.hash(newPassword, 10);
-    await pool.query("UPDATE event_planner SET pass = $1 WHERE planner_id = $2", [hashedNew, user.planner_id]);
+    await pool.query("UPDATE event_planner SET pass = $1 WHERE planner_id = $2", [hashedNew, user.id]);
 
     res.json({ success: true });
   } catch (err) {
