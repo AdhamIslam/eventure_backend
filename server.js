@@ -1231,4 +1231,22 @@ app.delete("/admin/events/:id", async (req, res) => {
     res.status(500).json({ error: "Failed to delete event" });
   }
 });
+app.put("/admin/clients/:id/toggle", async (req, res) => {
+  try {
+    const clientId = req.params.id;
+
+    // Toggle the current status
+    await pool.query(`
+      UPDATE client
+      SET enabled = NOT enabled
+      WHERE client_id = $1
+    `, [clientId]);
+
+    res.json({ success: true, message: "Client status toggled." });
+  } catch (err) {
+    console.error("Error toggling client status:", err);
+    res.status(500).json({ error: "Failed to toggle client." });
+  }
+});
+
 
