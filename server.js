@@ -1264,5 +1264,21 @@ app.put("/admin/planners/:id/toggle", async (req, res) => {
     res.status(500).json({ error: "Failed to toggle planner." });
   }
 });
+app.put("/admin/events/:id/toggle", async (req, res) => {
+  try {
+    const eventId = req.params.id;
+
+    await pool.query(`
+      UPDATE events
+      SET approved = NOT approved
+      WHERE event_id = $1
+    `, [eventId]);
+
+    res.json({ success: true, message: "Event approval toggled." });
+  } catch (err) {
+    console.error("Error toggling event approval:", err);
+    res.status(500).json({ error: "Failed to toggle event approval." });
+  }
+});
 
 
