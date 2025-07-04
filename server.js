@@ -1248,5 +1248,21 @@ app.put("/admin/clients/:id/toggle", async (req, res) => {
     res.status(500).json({ error: "Failed to toggle client." });
   }
 });
+app.put("/admin/planners/:id/toggle", async (req, res) => {
+  try {
+    const plannerId = req.params.id;
+
+    await pool.query(`
+      UPDATE event_planner
+      SET enabled = NOT enabled
+      WHERE planner_id = $1
+    `, [plannerId]);
+
+    res.json({ success: true, message: "Planner status toggled." });
+  } catch (err) {
+    console.error("Error toggling planner status:", err);
+    res.status(500).json({ error: "Failed to toggle planner." });
+  }
+});
 
 
