@@ -1155,3 +1155,80 @@ app.post("/plannerChangePassword", async (req, res) => {
     res.status(500).json({ error: "Error changing password" });
   }
 });
+// ================= ADMIN =================
+// ================= CLIENTS =================
+
+// Get all clients
+app.get("/admin/clients", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM client ORDER BY client_id");
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch clients" });
+  }
+});
+
+// Toggle client enable/disable
+app.put("/admin/clients/:id/toggle", async (req, res) => {
+  try {
+    await pool.query("UPDATE client SET enabled = NOT enabled WHERE client_id = $1", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to toggle client" });
+  }
+});
+
+// ================= PLANNERS =================
+
+// Get all planners
+app.get("/admin/planners", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM event_planner ORDER BY planner_id");
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch planners" });
+  }
+});
+
+// Toggle planner enable/disable
+app.put("/admin/planners/:id/toggle", async (req, res) => {
+  try {
+    await pool.query("UPDATE event_planner SET enabled = NOT enabled WHERE planner_id = $1", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to toggle planner" });
+  }
+});
+
+// ================= EVENTS =================
+
+// Get all events
+app.get("/admin/events", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM events ORDER BY event_id");
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch events" });
+  }
+});
+
+// Approve event
+app.put("/admin/events/:id/approve", async (req, res) => {
+  try {
+    await pool.query("UPDATE events SET approved = true WHERE event_id = $1", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to approve event" });
+  }
+});
+
+// Delete event
+app.delete("/admin/events/:id", async (req, res) => {
+  try {
+    await pool.query("DELETE FROM events WHERE event_id = $1", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete event" });
+  }
+});
+
