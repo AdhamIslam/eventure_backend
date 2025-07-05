@@ -173,7 +173,6 @@ app.post("/reset-password", async (req, res) => {
 
 app.post("/loginValidate", async (req, res) => {
   const { emailOrUsername, password } = req.body;
-
   try {
     const result = await pool.query(
       "SELECT * FROM client WHERE email = $1 OR username = $1",
@@ -183,8 +182,10 @@ app.post("/loginValidate", async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
-
     const user = result.rows[0];
+    if (!user.enabled) {
+      return res.status(401).json({ error: "Your account has been blocked , contact support" });
+    }    
     const role = "user";
     const passwordMatch = await bcrypt.compare(password, user.pass);
 
@@ -396,6 +397,9 @@ app.post("/plannerLoginValidate",async(req,res)=>{
     }
 
     const user = result.rows[0];
+    if (!user.enabled) {
+      return res.status(401).json({ error: "Your account is not active , contact support or try again in 24 hours" });
+    }
     const role = "planner";
     const passwordMatch = await bcrypt.compare(password, user.pass);
 
@@ -686,7 +690,7 @@ app.post("/logout", (req, res) => {
 //**************************************************************************Events****************************************************************** */
 app.get("/getAllEvents", async (req, res) => {
   try {
-    const result = await pool.query("SELECT event_id AS id, event_name AS title FROM events"); // adjust table/column names
+    const result = await pool.query("SELECT event_id AS id, event_name AS title FROM events WHERE approved=TRUE"); // adjust table/column names
     res.json(result.rows);
   } catch (err) {
     console.error("Error fetching events:", err);
@@ -709,6 +713,7 @@ app.get("/detailedEvents", async (req, res) => {
         SUM(tc.remaining_tickets) AS total_remaining
       FROM events e
       LEFT JOIN ticket_categories tc ON e.event_id = tc.event_id
+      WHERE e.approved=true
       GROUP BY e.event_id
       ORDER BY e.event_date ASC
     `);
@@ -752,7 +757,7 @@ app.get("/plannerEvents", async (req, res) => {
   try {
     // Fetch all events created by this planner
     const eventsResult = await pool.query(
-      `SELECT e.event_id, e.event_name, e.event_date, e.event_time,e.category, e.event_description, e.full_address, e.event_image_url
+      `SELECT e.event_id, e.event_name, e.event_date, e.event_time,e.category, e.event_description, e.full_address, e.event_image_url,e.approved
        FROM events e
        WHERE e.planner_id = $1
        ORDER BY e.event_date ASC`,
