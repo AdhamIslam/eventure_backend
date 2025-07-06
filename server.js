@@ -391,7 +391,6 @@ app.get("/user/booked-events", async (req, res) => {
     const result = await pool.query(`
       SELECT 
         t.ticket_id,
-        t.quantity,
         e.event_name,
         e.event_date,
         e.full_address
