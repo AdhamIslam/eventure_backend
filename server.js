@@ -981,7 +981,7 @@ app.post("/verify-otp", (req, res) => {
 
 app.get("/generate-qr", async (req, res) => {
   const user = req.session.user;
-
+  const eventId = req.body;
   if (!user?.id || !user?.email) {
     return res.status(400).json({ error: "Missing user session data." });
   }
@@ -993,8 +993,8 @@ app.get("/generate-qr", async (req, res) => {
        FROM tickets t
        JOIN ticket_categories tc ON t.category_id = tc.category_id
        JOIN events e ON t.event_id = e.event_id
-       WHERE t.client_id = $1`, 
-      [user.id]
+       WHERE t.client_id = $1 AND e.event_id = $2`, 
+      [user.id,eventId]
     );
 
     if (tickets.length === 0) {
