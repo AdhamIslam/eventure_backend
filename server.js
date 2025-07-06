@@ -1351,7 +1351,7 @@ app.post("/mobileForgotPassword", async (req, res) => {
     });
 
     // ✅ Update this link to match your Flutter app scheme/deep link
-    const resetLink = `eventureapp://resetPassword?token=${token}&role=${role}`;
+    const resetLink = `EventureApp://reset-password?token=${token}&role=${role}`;
 
     const mailOptions = {
       to: email,
