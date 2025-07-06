@@ -725,7 +725,7 @@ app.get("/getAllEvents", async (req, res) => {
       e.event_id AS id, 
       e.event_name AS title
       FROM events e
-      JOIN client c ON TRUE  -- just to access dob
+      JOIN client c ON TRUE  
       WHERE 
         e.approved = TRUE
         AND c.client_id = $1
@@ -754,7 +754,7 @@ app.get("/detailedEvents", async (req, res) => {
         SUM(tc.remaining_tickets) AS total_remaining
       FROM events e
       LEFT JOIN ticket_categories tc ON e.event_id = tc.event_id
-      JOIN client c ON TRUE  -- just to access dob (can be filtered later)
+      JOIN client c ON TRUE 
       WHERE 
         e.approved = true
         AND c.client_id = $1
