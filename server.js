@@ -381,6 +381,33 @@ app.get("/getClientProfileById/:id", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+app.get("/user/booked-events", async (req, res) => {
+  try {
+    const user = req.session.user;
+
+    const clientId = user.id;
+    if (!clientId) return res.status(401).json({ error: "Unauthorized" });
+
+    const result = await pool.query(`
+      SELECT 
+        t.ticket_id,
+        t.quantity,
+        e.event_name,
+        e.event_date,
+        e.full_address
+      FROM tickets t
+      JOIN events e ON t.event_id = e.event_id
+      WHERE t.client_id = $1
+      ORDER BY e.event_date DESC
+    `, [clientId]);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching booked events:", err);
+    res.status(500).json({ error: "Failed to fetch booked events" });
+  }
+});
+
 //**************************************************************************planner****************************************************************** */
 
 app.post("/plannerLoginValidate",async(req,res)=>{
