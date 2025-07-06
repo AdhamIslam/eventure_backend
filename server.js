@@ -1317,5 +1317,55 @@ app.put("/admin/events/:id/toggle", async (req, res) => {
     res.status(500).json({ error: "Failed to toggle event approval." });
   }
 });
+////////////////////////////***********MOBILE***********////////////////////////////
+app.post("/mobileForgotPassword", async (req, res) => {
+  const { email, role } = req.body;
+
+  if (!email || !role) {
+    return res.status(400).json({ error: "Email and role are required." });
+  }
+
+  const table = role === "planner" ? "event_planner" : "client";
+  const idCol = role === "planner" ? "planner_id" : "client_id";
+
+  try {
+    const result = await pool.query(`SELECT * FROM ${table} WHERE email = $1`, [email]);
+
+    if (result.rows.length === 0) {
+      return res.status(200).json({ message: "If the email is registered, a reset link has been sent." });
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+
+    await pool.query(
+      `UPDATE ${table} SET reset_token = $1, reset_token_expiry = NOW() + interval '1 hour' WHERE email = $2`,
+      [token, email]
+    );
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    // ✅ Update this link to match your Flutter app scheme/deep link
+    const resetLink = `eventureapp://resetPassword?token=${token}&role=${role}`;
+
+    const mailOptions = {
+      to: email,
+      subject: "Password Reset (Mobile)",
+      html: `<p>Tap <a href="${resetLink}">here</a> to reset your password in the mobile app. The link expires in 1 hour.</p>`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    return res.status(200).json({ message: "Mobile reset link sent" });
+  } catch (err) {
+    console.error("Mobile forgot password error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 
