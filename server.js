@@ -389,14 +389,16 @@ app.get("/user/booked-events", async (req, res) => {
     if (!clientId) return res.status(401).json({ error: "Unauthorized" });
 
     const result = await pool.query(`
-      SELECT 
+      SELECT DISTINCT
         t.ticket_id,
+        tc.category,
         e.event_name,
         e.event_date,
         e.full_address
       FROM tickets t
+      JOIN ticket_categories tc ON t.category_id=tc.category_id
       JOIN events e ON t.event_id = e.event_id
-      WHERE t.client_id = $1
+      WHERE t.client_id =$1
       ORDER BY e.event_date DESC
     `, [clientId]);
 
