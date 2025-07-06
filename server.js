@@ -981,7 +981,7 @@ app.post("/verify-otp", (req, res) => {
 
 app.get("/generate-qr", async (req, res) => {
   const user = req.session.user;
-  const eventId = req.body;
+  const {eventId} = req.body;
   if (!user?.id || !user?.email) {
     return res.status(400).json({ error: "Missing user session data." });
   }
