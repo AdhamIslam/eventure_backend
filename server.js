@@ -903,7 +903,7 @@ app.get("/tickets/:eventId", async (req, res) => {
 app.post("/setSelectedTickets", (req, res) => {
   const user=req.session.user;
   if(!user){
-    res.status(400).json({ error: "You must sign in first" });
+    res.status(400).json({ message: "You must sign in first" });
   }
   const { selectedTickets, totalPrice,eventId } = req.body;
   req.session.selectedTickets = selectedTickets;
