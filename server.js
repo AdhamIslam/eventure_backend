@@ -717,19 +717,8 @@ app.post("/logout", (req, res) => {
 
 //**************************************************************************Events****************************************************************** */
 app.get("/getAllEvents", async (req, res) => {
-  const user=req.session.user;
-  const clientId=user.id;
   try {
-    const result = await pool.query(`
-      SELECT 
-      e.event_id AS id, 
-      e.event_name AS title
-      FROM events e
-      JOIN client c ON TRUE  
-      WHERE 
-        e.approved = TRUE
-        AND c.client_id = $1
-        AND DATE_PART('year', AGE(c.dob)) BETWEEN e.min_age AND e.max_age`,[clientId]); // adjust table/column names
+    const result = await pool.query(`SELECT event_id AS id, event_name AS title FROM events WHERE approved=TRUE`); // adjust table/column names
     res.json(result.rows);
   } catch (err) {
     console.error("Error fetching events:", err);
