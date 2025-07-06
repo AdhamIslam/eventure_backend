@@ -717,6 +717,8 @@ app.post("/logout", (req, res) => {
 
 //**************************************************************************Events****************************************************************** */
 app.get("/getAllEvents", async (req, res) => {
+  const user=req.session.user;
+  const clientId=user.id;
   try {
     const result = await pool.query(`
       SELECT 
@@ -727,7 +729,7 @@ app.get("/getAllEvents", async (req, res) => {
       WHERE 
         e.approved = TRUE
         AND c.client_id = $1
-        AND DATE_PART('year', AGE(c.dob)) BETWEEN e.min_age AND e.max_age`); // adjust table/column names
+        AND DATE_PART('year', AGE(c.dob)) BETWEEN e.min_age AND e.max_age`,[clientId]); // adjust table/column names
     res.json(result.rows);
   } catch (err) {
     console.error("Error fetching events:", err);
@@ -736,6 +738,8 @@ app.get("/getAllEvents", async (req, res) => {
 });
 
 app.get("/detailedEvents", async (req, res) => {
+  const user=req.session.user;
+  const clientId=user.id;
   try {
     const result = await pool.query(`
       SELECT 
@@ -760,7 +764,7 @@ app.get("/detailedEvents", async (req, res) => {
       GROUP BY e.event_id
       ORDER BY e.event_date ASC;
 
-    `);
+    `,[clientId]);
 
     const events = result.rows.map(row => {
       const min = row.min_price || 0;
