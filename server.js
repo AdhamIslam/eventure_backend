@@ -718,7 +718,16 @@ app.post("/logout", (req, res) => {
 //**************************************************************************Events****************************************************************** */
 app.get("/getAllEvents", async (req, res) => {
   try {
-    const result = await pool.query("SELECT event_id AS id, event_name AS title FROM events WHERE approved=TRUE"); // adjust table/column names
+    const result = await pool.query(`
+      SELECT 
+      e.event_id AS id, 
+      e.event_name AS title
+      FROM events e
+      JOIN client c ON TRUE  -- just to access dob
+      WHERE 
+        e.approved = TRUE
+        AND c.client_id = $1
+        AND DATE_PART('year', AGE(c.dob)) BETWEEN e.min_age AND e.max_age`); // adjust table/column names
     res.json(result.rows);
   } catch (err) {
     console.error("Error fetching events:", err);
@@ -741,9 +750,16 @@ app.get("/detailedEvents", async (req, res) => {
         SUM(tc.remaining_tickets) AS total_remaining
       FROM events e
       LEFT JOIN ticket_categories tc ON e.event_id = tc.event_id
-      WHERE e.approved=true
+      JOIN client c ON TRUE  -- just to access dob (can be filtered later)
+      WHERE 
+        e.approved = true
+        AND c.client_id = $1
+        AND (
+          DATE_PART('year', AGE(c.dob)) BETWEEN e.min_age AND e.max_age
+        )
       GROUP BY e.event_id
-      ORDER BY e.event_date ASC
+      ORDER BY e.event_date ASC;
+
     `);
 
     const events = result.rows.map(row => {
