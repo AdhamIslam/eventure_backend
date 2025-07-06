@@ -1356,8 +1356,17 @@ app.post("/mobileForgotPassword", async (req, res) => {
     const mailOptions = {
       to: email,
       subject: "Password Reset (Mobile)",
-      html: `<p>Tap <a href="${resetLink}">here</a> to reset your password in the mobile app. The link expires in 1 hour.</p>`,
+      html: `
+        <p>To reset your password, click the link below:</p>
+        <p>
+          <a href="${resetLink}" style="color: #1a73e8; text-decoration: underline;">
+            ${resetLink}
+          </a>
+        </p>
+        <p>This link will expire in 1 hour.</p>
+      `,
     };
+
 
     await transporter.sendMail(mailOptions);
 
