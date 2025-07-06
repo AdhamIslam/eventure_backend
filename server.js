@@ -727,8 +727,6 @@ app.get("/getAllEvents", async (req, res) => {
 });
 
 app.get("/detailedEvents", async (req, res) => {
-  const user=req.session.user;
-  const clientId=user.id;
   try {
     const result = await pool.query(`
       SELECT 
@@ -743,17 +741,10 @@ app.get("/detailedEvents", async (req, res) => {
         SUM(tc.remaining_tickets) AS total_remaining
       FROM events e
       LEFT JOIN ticket_categories tc ON e.event_id = tc.event_id
-      JOIN client c ON TRUE 
-      WHERE 
-        e.approved = true
-        AND c.client_id = $1
-        AND (
-          DATE_PART('year', AGE(c.dob)) BETWEEN e.min_age AND e.max_age
-        )
+      WHERE e.approved=true  
       GROUP BY e.event_id
-      ORDER BY e.event_date ASC;
-
-    `,[clientId]);
+      ORDER BY e.event_date ASC
+    `);
 
     const events = result.rows.map(row => {
       const min = row.min_price || 0;
