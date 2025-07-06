@@ -979,7 +979,7 @@ app.post("/verify-otp", (req, res) => {
 
 
 
-app.get("/generate-qr", async (req, res) => {
+app.post("/generate-qr", async (req, res) => {
   const user = req.session.user;
   const {eventId} = req.body;
   if (!user?.id || !user?.email) {
