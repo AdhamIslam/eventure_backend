@@ -408,7 +408,7 @@ app.get("/user/booked-events", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch booked events" });
   }
 });
-
+//9 client 
 //**************************************************************************planner****************************************************************** */
 
 app.post("/plannerLoginValidate",async(req,res)=>{
@@ -692,6 +692,7 @@ app.post("/saveTickets", async (req, res) => {
     client.release();
   }
 });
+// 5 event planner (t 14)
 //**************************************************************************Session Req****************************************************************** */
 app.get("/checkSession", async (req, res) => {
   if (!req.session.user) return res.status(401).json({ error: "Not logged in" });
@@ -832,10 +833,7 @@ app.get("/plannerEvents", async (req, res) => {
   }
 });
 
-app.get("/ayneela",(req,res)=>{
-  const user = req.session.user;
-  res.status(200).json({ plannerId:user.id });
-});
+
 
 
 app.get("/reverse-geocode", async (req, res) => {
@@ -979,12 +977,8 @@ app.post("/verify-otp", (req, res) => {
 
 
 
-app.post("/generate-qr", async (req, res) => {
+app.get("/generate-qr", async (req, res) => {
   const user = req.session.user;
-  const {eventId} = req.body;
-  if(!eventId){
-    return res.status(400).json({ error: "Missing event id." });
-  }
   if (!user?.id || !user?.email) {
     return res.status(400).json({ error: "Missing user session data." });
   }
@@ -996,8 +990,8 @@ app.post("/generate-qr", async (req, res) => {
        FROM tickets t
        JOIN ticket_categories tc ON t.category_id = tc.category_id
        JOIN events e ON t.event_id = e.event_id
-       WHERE t.client_id = $1 AND t.event_id = $2`, 
-      [user.id,eventId]
+       WHERE t.client_id = $1`, 
+      [user.id]
     );
 
     if (tickets.length === 0) {
@@ -1195,6 +1189,7 @@ app.post("/plannerChangePassword", async (req, res) => {
     res.status(500).json({ error: "Error changing password" });
   }
 });
+//32
 // ================= ADMIN =================
 // ================= CLIENTS =================
 
@@ -1379,5 +1374,5 @@ app.post("/mobileForgotPassword", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-
+/// total 43 API Routes
 
